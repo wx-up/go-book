@@ -11,7 +11,7 @@ func RegisterRoutes(engine *gin.Engine) {
 
 func registerUserRoutes(engine *gin.Engine) {
 	ug := engine.Group("/users")
-	u := &user.Handler{}
+	u := user.NewHandler()
 	ug.POST("/signup", u.SignUp)
 	ug.POST("/login", u.Login)
 	ug.POST("/edit", u.Edit)
