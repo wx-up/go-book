@@ -9,14 +9,23 @@ import (
 	"syscall"
 	"time"
 
+	"gorm.io/driver/mysql"
+
+	"gorm.io/gorm"
+
 	"github.com/gin-gonic/gin"
 	"github.com/wx-up/go-book/internal/web"
 )
 
 func main() {
+	db, _ := gorm.Open(mysql.New(mysql.Config{
+		DSN: "",
+	}), &gorm.Config{})
+	_ = db
 	// gin.SetMode(gin.ReleaseMode)
 	engine := gin.Default()
 
+	// 路由注册
 	web.RegisterRoutes(engine)
 
 	addr := ":8080"

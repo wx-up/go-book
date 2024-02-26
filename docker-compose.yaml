@@ -1,0 +1,37 @@
+version: '3.0'
+networks:
+  backend:
+    driver: bridge
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      - TZ=Asia/Shanghai
+      - MYSQL_ROOT_PASSWORD=root
+    command:
+      - "--default-authentication-plugin=mysql_native_password"
+    privileged: true
+    volumes:
+      - "./data/mysql:/var/lib/mysql"
+      - "./script/mysql/:/docker-entrypoint-initdb.d/"
+    ports:
+      - "13316:3306"
+    networks:
+      - backend
+    restart: always
+
+#  redis:
+#    image: redis:7.0
+#    environment:
+#      - TZ=Asia/Shanghai
+#    privileged: true
+#    volumes:
+#      - "./data/redis:/data"
+#    ports:
+#      - "6379:6379"                          # 设置容器6379端口映射指定宿主机端口
+#    networks:
+#      - backend
+#    restart: always
+
+

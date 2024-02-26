@@ -1,0 +1,1 @@
+create database go_book;
