@@ -3,10 +3,13 @@ package user
 import (
 	"fmt"
 	"testing"
+
+	"github.com/gin-gonic/gin"
 )
 
 func Test(t *testing.T) {
-	s := []int64{1}
-	fmt.Println(s[0])
-	fmt.Println(s[1:])
+	var err error
+	fmt.Println(err == nil)
+	_, ok := err.(gin.Error)
+	fmt.Println(ok)
 }

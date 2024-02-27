@@ -10,6 +10,8 @@ import (
 	"github.com/wx-up/go-book/internal/domain"
 )
 
+var ErrUserDuplicateEmail = dao.ErrUserDuplicateEmail
+
 type UserRepository struct {
 	dao *dao.UserDAO
 }
