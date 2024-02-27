@@ -2,10 +2,10 @@ version: '3.0'
 networks:
   backend:
     driver: bridge
-
 services:
   mysql:
     image: mysql:8.0
+    container_name: mysql8
     environment:
       - TZ=Asia/Shanghai
       - MYSQL_ROOT_PASSWORD=root

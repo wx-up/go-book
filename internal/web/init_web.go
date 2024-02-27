@@ -3,6 +3,13 @@ package web
 import (
 	"time"
 
+	"github.com/wx-up/go-book/internal/global"
+
+	"github.com/wx-up/go-book/internal/repository/dao"
+
+	"github.com/wx-up/go-book/internal/repository"
+	"github.com/wx-up/go-book/internal/service"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/wx-up/go-book/internal/web/user"
@@ -10,12 +17,12 @@ import (
 
 func RegisterRoutes(engine *gin.Engine) {
 	engine.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
+		// AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"PUT", "PATCH", "POST"},
 		AllowHeaders:     []string{"Content-Type"},
 		AllowCredentials: true,
 		AllowOriginFunc: func(origin string) bool {
-			return origin == "https://github.com"
+			return true
 		},
 		MaxAge: 12 * time.Hour,
 	}))
@@ -24,7 +31,11 @@ func RegisterRoutes(engine *gin.Engine) {
 
 func registerUserRoutes(engine *gin.Engine) {
 	ug := engine.Group("/users")
-	u := user.NewHandler()
+	// 依赖注入的写法，遵循一个原则：我要用的东西我不会在内部自己初始化，由外部传入
+	userDao := dao.NewUserDAO(global.DB)
+	repo := repository.NewUserRepository(userDao)
+	svc := service.NewUserService(repo)
+	u := user.NewHandler(svc)
 	ug.POST("/signup", u.SignUp)
 	ug.POST("/login", u.Login)
 	ug.POST("/edit", u.Edit)

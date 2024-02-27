@@ -3,21 +3,27 @@ package user
 import (
 	"net/http"
 
+	"github.com/wx-up/go-book/internal/domain"
+
+	"github.com/wx-up/go-book/internal/service"
+
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
+	svc         *service.UserService
 	emailExp    *regexp.Regexp
 	passwordExp *regexp.Regexp
 }
 
-func NewHandler() *Handler {
+func NewHandler(svc *service.UserService) *Handler {
 	const (
 		emailRegexPattern    = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
 		passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$`
 	)
 	return &Handler{
+		svc:         svc,
 		emailExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
 	}
@@ -52,6 +58,16 @@ func (h *Handler) SignUp(ctx *gin.Context) {
 	}
 	if !ok {
 		ctx.String(http.StatusOK, "密码格式不正确")
+		return
+	}
+
+	// 注册
+	err = h.svc.SignUp(ctx, domain.User{
+		Email:    req.Email,
+		Password: req.Password,
+	})
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
 
