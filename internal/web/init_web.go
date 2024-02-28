@@ -3,7 +3,11 @@ package web
 import (
 	"time"
 
-	"github.com/gin-gonic/contrib/sessions"
+	"github.com/gin-contrib/sessions"
+
+	"github.com/gin-contrib/sessions/cookie"
+
+	"github.com/wx-up/go-book/internal/web/middleware"
 
 	"github.com/wx-up/go-book/internal/global"
 
@@ -18,6 +22,7 @@ import (
 )
 
 func RegisterRoutes(engine *gin.Engine) {
+	// 跨域
 	engine.Use(cors.New(cors.Config{
 		// AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"PUT", "PATCH", "POST"},
@@ -28,8 +33,15 @@ func RegisterRoutes(engine *gin.Engine) {
 		},
 		MaxAge: 12 * time.Hour,
 	}))
-	store := sessions.NewCookieStore([]byte("go-book"))
+
+	// session 插件
+	store := cookie.NewStore([]byte("go-book"))
 	engine.Use(sessions.Sessions("ssid", store))
+
+	// 登陆插件
+	engine.Use(middleware.NewLoginMiddlewareBuilder().Build())
+
+	// 注册业务路由
 	registerUserRoutes(engine)
 }
 

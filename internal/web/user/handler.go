@@ -3,7 +3,7 @@ package user
 import (
 	"net/http"
 
-	"github.com/gin-gonic/contrib/sessions"
+	"github.com/gin-contrib/sessions"
 
 	"github.com/wx-up/go-book/internal/domain"
 
