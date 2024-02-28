@@ -82,6 +82,26 @@ func (h *Handler) SignUp(ctx *gin.Context) {
 }
 
 func (h *Handler) Login(ctx *gin.Context) {
+	type LoginReq struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	var req LoginReq
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+
+	// 邮箱验证
+	err := h.svc.Login(ctx, domain.User{Email: req.Email, Password: req.Password})
+	if err == service.ErrInvalidUserOrPassword {
+		ctx.String(http.StatusOK, "账号或者密码不对")
+		return
+	}
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+	ctx.String(http.StatusOK, "登陆成功")
 }
 
 func (h *Handler) Edit(ctx *gin.Context) {
