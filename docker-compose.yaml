@@ -21,17 +21,17 @@ services:
       - backend
     restart: always
 
-#  redis:
-#    image: redis:7.0
-#    environment:
-#      - TZ=Asia/Shanghai
-#    privileged: true
-#    volumes:
-#      - "./data/redis:/data"
-#    ports:
-#      - "6379:6379"                          # 设置容器6379端口映射指定宿主机端口
-#    networks:
-#      - backend
-#    restart: always
+  redis:
+    image: redis:7.0
+    environment:
+      - TZ=Asia/Shanghai
+    privileged: true
+    volumes:
+      - "./data/redis:/data"
+    ports:
+      - "7379:6379"                          # 设置容器6379端口映射指定宿主机端口
+    networks:
+      - backend
+    restart: always
 
 

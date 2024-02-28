@@ -3,9 +3,9 @@ package web
 import (
 	"time"
 
-	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/redis"
 
-	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/sessions"
 
 	"github.com/wx-up/go-book/internal/web/middleware"
 
@@ -35,7 +35,17 @@ func RegisterRoutes(engine *gin.Engine) {
 	}))
 
 	// session 插件
-	store := cookie.NewStore([]byte("go-book"))
+	store, err := redis.NewStore(
+		16,
+		"tcp",
+		"localhost:7379",
+		"",
+		[]byte("Kv5mvUKCUDmGRC2XRZI622fWvazQaHCB"),
+		[]byte("bOCdz7AdaFiRTF8kiLVxY7I8BHn49dPh"),
+	)
+	if err != nil {
+		panic(err)
+	}
 	engine.Use(sessions.Sessions("ssid", store))
 
 	// 登陆插件
