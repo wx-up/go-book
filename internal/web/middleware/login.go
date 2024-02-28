@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// LoginMiddlewareBuilder builder 模式
 type LoginMiddlewareBuilder struct {
 	whiteList []string
 }
@@ -15,6 +16,11 @@ func NewLoginMiddlewareBuilder() *LoginMiddlewareBuilder {
 	return &LoginMiddlewareBuilder{
 		whiteList: []string{"/users/login", "/users/signup"},
 	}
+}
+
+func (lm *LoginMiddlewareBuilder) IgnorePaths(paths ...string) *LoginMiddlewareBuilder {
+	lm.whiteList = append(lm.whiteList, paths...)
+	return lm
 }
 
 func (lm *LoginMiddlewareBuilder) Build() gin.HandlerFunc {

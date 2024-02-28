@@ -27,6 +27,7 @@ func NewUserDAO(db *gorm.DB) *UserDAO {
 }
 
 func (dao *UserDAO) FindByEmail(ctx context.Context, email string) (obj model.User, err error) {
+	// SELECT * FROM `users` WHERE `email` = ? LIMIT 1
 	err = dao.db.WithContext(ctx).Where("email = ?", email).First(&obj).Error
 	return
 }
