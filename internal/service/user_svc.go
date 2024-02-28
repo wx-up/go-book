@@ -26,22 +26,22 @@ func NewUserService(repo *repository.UserRepository) *UserService {
 	}
 }
 
-func (svc *UserService) Login(ctx context.Context, obj domain.User) error {
+func (svc *UserService) Login(ctx context.Context, obj domain.User) (domain.User, error) {
 	// 查找用户
 	u, err := svc.repo.FindByEmail(ctx, obj.Email)
 	if err == repository.ErrUserNotFound {
-		return ErrInvalidUserOrPassword
+		return domain.User{}, ErrInvalidUserOrPassword
 	}
 	if err != nil {
-		return err
+		return domain.User{}, err
 	}
 
 	// 比较密码
 	if err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(obj.Password)); err != nil {
 		// 错误被转换了，需要打日志
-		return ErrInvalidUserOrPassword
+		return domain.User{}, ErrInvalidUserOrPassword
 	}
-	return nil
+	return u, nil
 }
 
 func (svc *UserService) SignUp(ctx context.Context, obj domain.User) error {

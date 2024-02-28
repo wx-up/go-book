@@ -3,6 +3,8 @@ package web
 import (
 	"time"
 
+	"github.com/gin-gonic/contrib/sessions"
+
 	"github.com/wx-up/go-book/internal/global"
 
 	"github.com/wx-up/go-book/internal/repository/dao"
@@ -26,6 +28,8 @@ func RegisterRoutes(engine *gin.Engine) {
 		},
 		MaxAge: 12 * time.Hour,
 	}))
+	store := sessions.NewCookieStore([]byte("go-book"))
+	engine.Use(sessions.Sessions("ssid", store))
 	registerUserRoutes(engine)
 }
 

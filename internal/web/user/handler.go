@@ -3,6 +3,8 @@ package user
 import (
 	"net/http"
 
+	"github.com/gin-gonic/contrib/sessions"
+
 	"github.com/wx-up/go-book/internal/domain"
 
 	"github.com/wx-up/go-book/internal/service"
@@ -92,7 +94,7 @@ func (h *Handler) Login(ctx *gin.Context) {
 	}
 
 	// 邮箱验证
-	err := h.svc.Login(ctx, domain.User{Email: req.Email, Password: req.Password})
+	u, err := h.svc.Login(ctx, domain.User{Email: req.Email, Password: req.Password})
 	if err == service.ErrInvalidUserOrPassword {
 		ctx.String(http.StatusOK, "账号或者密码不对")
 		return
@@ -101,6 +103,15 @@ func (h *Handler) Login(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
+
+	// 保持登陆状态
+	sess := sessions.Default(ctx)
+	sess.Set("uid", u.Id)
+	if err = sess.Save(); err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+
 	ctx.String(http.StatusOK, "登陆成功")
 }
 
