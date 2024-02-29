@@ -40,14 +40,14 @@ func (lm *LoginMiddlewareBuilder) Build() gin.HandlerFunc {
 			return
 		}
 		sess.Set("uid", sess.Get("uid"))
-		sess.Options(sessions.Options{
-			MaxAge: 30 * 60,
-		})
 
 		// 刷新登陆状态
 		updateTime := sess.Get("update_time")
 		now := time.Now().UnixMilli()
 		if updateTime == nil {
+			sess.Options(sessions.Options{
+				MaxAge: 30 * 60,
+			})
 			sess.Set("update_time", now)
 			_ = sess.Save()
 			return
@@ -55,6 +55,9 @@ func (lm *LoginMiddlewareBuilder) Build() gin.HandlerFunc {
 
 		// 每5秒刷新一次
 		if now >= updateTime.(int64)+5*1000 {
+			sess.Options(sessions.Options{
+				MaxAge: 30 * 60,
+			})
 			sess.Set("update_time", now)
 			_ = sess.Save()
 			return
