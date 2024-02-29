@@ -14,7 +14,6 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/wx-up/go-book/internal/web/user"
 )
 
 func RegisterRoutes(engine *gin.Engine) {
@@ -57,7 +56,7 @@ func registerUserRoutes(engine *gin.Engine) {
 	userDao := dao.NewUserDAO(global.DB)
 	repo := repository.NewUserRepository(userDao)
 	svc := service.NewUserService(repo)
-	u := user.NewHandler(svc)
+	u := NewUserHandler(svc)
 	ug.POST("/signup", u.SignUp)
 	ug.POST("/login", u.Login)
 	ug.POST("/edit", u.Edit)

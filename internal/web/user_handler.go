@@ -13,25 +13,25 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Handler struct {
+type UserHandler struct {
 	svc         *service.UserService
 	emailExp    *regexp.Regexp
 	passwordExp *regexp.Regexp
 }
 
-func NewHandler(svc *service.UserService) *Handler {
+func NewUserHandler(svc *service.UserService) *UserHandler {
 	const (
 		emailRegexPattern    = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
 		passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$`
 	)
-	return &Handler{
+	return &UserHandler{
 		svc:         svc,
 		emailExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
 	}
 }
 
-func (h *Handler) SignUp(ctx *gin.Context) {
+func (h *UserHandler) SignUp(ctx *gin.Context) {
 	type SignUpReq struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -83,7 +83,7 @@ func (h *Handler) SignUp(ctx *gin.Context) {
 	ctx.String(http.StatusOK, "注册成功")
 }
 
-func (h *Handler) Login(ctx *gin.Context) {
+func (h *UserHandler) Login(ctx *gin.Context) {
 	type LoginReq struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -104,7 +104,7 @@ func (h *Handler) Login(ctx *gin.Context) {
 		return
 	}
 
-	// 保持登陆状态
+	// jwt 保持登陆状态
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{}, func(token *jwt.Token) {
 	})
 	jwtToken, err := token.SignedString([]byte("go-book"))
@@ -117,8 +117,8 @@ func (h *Handler) Login(ctx *gin.Context) {
 	ctx.String(http.StatusOK, "登陆成功")
 }
 
-func (h *Handler) Edit(ctx *gin.Context) {
+func (h *UserHandler) Edit(ctx *gin.Context) {
 }
 
-func (h *Handler) Profile(ctx *gin.Context) {
+func (h *UserHandler) Profile(ctx *gin.Context) {
 }
