@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -36,6 +37,26 @@ func (lm *LoginMiddlewareBuilder) Build() gin.HandlerFunc {
 		sess := sessions.Default(ctx)
 		if sess.Get("uid") == nil {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		sess.Set("uid", sess.Get("uid"))
+		sess.Options(sessions.Options{
+			MaxAge: 30 * 60,
+		})
+
+		// 刷新登陆状态
+		updateTime := sess.Get("update_time")
+		now := time.Now().UnixMilli()
+		if updateTime == nil {
+			sess.Set("update_time", now)
+			_ = sess.Save()
+			return
+		}
+
+		// 每5秒刷新一次
+		if now >= updateTime.(int64)+5*1000 {
+			sess.Set("update_time", now)
+			_ = sess.Save()
 			return
 		}
 	}

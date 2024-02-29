@@ -107,6 +107,9 @@ func (h *Handler) Login(ctx *gin.Context) {
 	// 保持登陆状态
 	sess := sessions.Default(ctx)
 	sess.Set("uid", u.Id)
+	sess.Options(sessions.Options{
+		MaxAge: 30 * 60, // 三十分钟
+	})
 	if err = sess.Save(); err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 		return
