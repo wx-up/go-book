@@ -1,9 +1,9 @@
-package user
+package web
 
 import (
 	"net/http"
 
-	"github.com/gin-contrib/sessions"
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/wx-up/go-book/internal/domain"
 
@@ -94,7 +94,7 @@ func (h *Handler) Login(ctx *gin.Context) {
 	}
 
 	// 邮箱验证
-	u, err := h.svc.Login(ctx, domain.User{Email: req.Email, Password: req.Password})
+	_, err := h.svc.Login(ctx, domain.User{Email: req.Email, Password: req.Password})
 	if err == service.ErrInvalidUserOrPassword {
 		ctx.String(http.StatusOK, "账号或者密码不对")
 		return
@@ -105,15 +105,14 @@ func (h *Handler) Login(ctx *gin.Context) {
 	}
 
 	// 保持登陆状态
-	sess := sessions.Default(ctx)
-	sess.Set("uid", u.Id)
-	sess.Options(sessions.Options{
-		MaxAge: 30 * 60, // 三十分钟
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{}, func(token *jwt.Token) {
 	})
-	if err = sess.Save(); err != nil {
+	jwtToken, err := token.SignedString([]byte("go-book"))
+	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
+	ctx.Header("x-jwt-token", jwtToken)
 
 	ctx.String(http.StatusOK, "登陆成功")
 }

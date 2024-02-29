@@ -3,10 +3,6 @@ package web
 import (
 	"time"
 
-	"github.com/gin-contrib/sessions/redis"
-
-	"github.com/gin-contrib/sessions"
-
 	"github.com/wx-up/go-book/internal/web/middleware"
 
 	"github.com/wx-up/go-book/internal/global"
@@ -24,9 +20,9 @@ import (
 func RegisterRoutes(engine *gin.Engine) {
 	// 跨域
 	engine.Use(cors.New(cors.Config{
-		// AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"PUT", "PATCH", "POST"},
-		AllowHeaders:     []string{"Content-Type"},
+		AllowHeaders:     []string{"Authorization", "Content-Type"},
+		ExposeHeaders:    []string{"X-Jwt-Token"},
 		AllowCredentials: true,
 		AllowOriginFunc: func(origin string) bool {
 			return true
@@ -35,21 +31,21 @@ func RegisterRoutes(engine *gin.Engine) {
 	}))
 
 	// session 插件
-	store, err := redis.NewStore(
-		16,
-		"tcp",
-		"localhost:7379",
-		"",
-		[]byte("Kv5mvUKCUDmGRC2XRZI622fWvazQaHCB"),
-		[]byte("bOCdz7AdaFiRTF8kiLVxY7I8BHn49dPh"),
-	)
-	if err != nil {
-		panic(err)
-	}
-	engine.Use(sessions.Sessions("ssid", store))
+	//store, err := redis.NewStore(
+	//	16,
+	//	"tcp",
+	//	"localhost:7379",
+	//	"",
+	//	[]byte("Kv5mvUKCUDmGRC2XRZI622fWvazQaHCB"),
+	//	[]byte("bOCdz7AdaFiRTF8kiLVxY7I8BHn49dPh"),
+	//)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//engine.Use(sessions.Sessions("ssid", store))
 
 	// 登陆插件
-	engine.Use(middleware.NewLoginMiddlewareBuilder().Build())
+	engine.Use(middleware.NewLoginJwtMiddlewareBuilder().Build())
 
 	// 注册业务路由
 	registerUserRoutes(engine)
