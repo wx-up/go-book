@@ -104,6 +104,17 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 		return
 	}
 
+	// 保持登陆状态
+	//sess := sessions.Default(ctx)
+	//sess.Set("uid", u.Id)
+	//sess.Options(sessions.Options{
+	//	MaxAge: 30 * 60, // 三十分钟
+	//})
+	//if err = sess.Save(); err != nil {
+	//	ctx.String(http.StatusOK, "系统错误")
+	//	return
+	//}
+
 	// jwt 保持登陆状态
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{}, func(token *jwt.Token) {
 	})
