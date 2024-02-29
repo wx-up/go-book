@@ -2,6 +2,9 @@ package web
 
 import (
 	"net/http"
+	"time"
+
+	"github.com/wx-up/go-book/internal/web/middleware"
 
 	"github.com/golang-jwt/jwt/v5"
 
@@ -94,7 +97,7 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	}
 
 	// 邮箱验证
-	_, err := h.svc.Login(ctx, domain.User{Email: req.Email, Password: req.Password})
+	u, err := h.svc.Login(ctx, domain.User{Email: req.Email, Password: req.Password})
 	if err == service.ErrInvalidUserOrPassword {
 		ctx.String(http.StatusOK, "账号或者密码不对")
 		return
@@ -116,7 +119,12 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	//}
 
 	// jwt 保持登陆状态
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{}, func(token *jwt.Token) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, middleware.UserClaim{
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   "go-book",
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * 60)), // 设置有效期
+		},
+		Uid: u.Id,
 	})
 	jwtToken, err := token.SignedString([]byte("go-book"))
 	if err != nil {

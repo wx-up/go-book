@@ -7,8 +7,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func Get() any {
+	return nil
+}
+
 func Test(t *testing.T) {
-	var err error
+	err := Get()
 	fmt.Println(err == nil)
 	_, ok := err.(gin.Error)
 	fmt.Println(ok)
