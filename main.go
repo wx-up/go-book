@@ -9,31 +9,29 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/wx-up/go-book/internal/repository/dao/model"
-
-	"github.com/wx-up/go-book/internal/global"
-
 	"github.com/gin-gonic/gin"
-	"github.com/wx-up/go-book/internal/web"
 )
 
 func main() {
 	// 全局资源初始化
-	err := global.Init()
-	if err != nil {
-		panic(err)
-	}
-
-	// 初始化表结构
-	err = model.InitTables(global.DB)
-	if err != nil {
-		panic(err)
-	}
+	//err := global.Init()
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//// 初始化表结构
+	//err = model.InitTables(global.DB)
+	//if err != nil {
+	//	panic(err)
+	//}
 
 	// gin.SetMode(gin.ReleaseMode)
 	engine := gin.Default()
+	engine.GET("/", func(ctx *gin.Context) {
+		ctx.Writer.WriteString("hello")
+	})
 	// 路由注册
-	web.RegisterRoutes(engine)
+	// web.RegisterRoutes(engine)
 
 	// 启动服务
 	addr := ":8080"

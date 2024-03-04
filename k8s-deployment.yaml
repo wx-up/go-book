@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-book-deploy
+  labels:
+    app: go-book-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: go-book
+  template:
+    metadata:
+      name: go-book
+      labels:
+        app: go-book
+    spec:
+      containers:
+        - name: go-book
+          image: wxsatellite/go_book:v1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+
+      restartPolicy: Always
+      
