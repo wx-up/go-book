@@ -4,33 +4,32 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/wx-up/go-book/pkg/set"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
 // LoginMiddlewareBuilder builder 模式
 type LoginMiddlewareBuilder struct {
-	whiteList []string
+	whiteList set.Set[string]
 }
 
 func NewLoginMiddlewareBuilder() *LoginMiddlewareBuilder {
 	return &LoginMiddlewareBuilder{
-		whiteList: []string{"/users/login", "/users/signup"},
+		whiteList: set.NewMapSet[string](3),
 	}
 }
 
 func (lm *LoginMiddlewareBuilder) IgnorePaths(paths ...string) *LoginMiddlewareBuilder {
-	lm.whiteList = append(lm.whiteList, paths...)
+	lm.whiteList.Add(paths...)
 	return lm
 }
 
 func (lm *LoginMiddlewareBuilder) Build() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		for _, path := range lm.whiteList {
-			if path == ctx.Request.URL.Path {
-				// 直接 return 和 调用 ctx.Next() 之后再 return 效果一样的
-				return
-			}
+		if lm.whiteList.Exist(ctx.Request.URL.Path) {
+			return
 		}
 
 		// 登陆验证
