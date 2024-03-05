@@ -1,26 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: go-book
+  name: redis
   labels:
-    app: go-book
+    app: redis
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
-      app: go-book
+      app: redis
   template:
     metadata:
-      name: go-book
+      name: redis
       labels:
-        app: go-book
+        app: redis
     spec:
       containers:
-        - name: go-book
-          image: wxsatellite/go_book:v1.0.0
+        - name: redis
+          image: redis:latest
           imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 8080
-
       restartPolicy: Always
       
