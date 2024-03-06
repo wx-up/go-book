@@ -1,6 +1,8 @@
 package global
 
 import (
+	"time"
+
 	"github.com/wx-up/go-book/config"
 
 	"gorm.io/driver/mysql"
@@ -17,5 +19,12 @@ func Init() error {
 		return err
 	}
 	DB = db
+	sqlDB, err := db.DB()
+	if err != nil {
+		return err
+	}
+	sqlDB.SetMaxIdleConns(200)
+	sqlDB.SetConnMaxIdleTime(time.Minute * 10)
+	sqlDB.SetMaxOpenConns(1200)
 	return nil
 }
