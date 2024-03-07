@@ -32,6 +32,12 @@ func (dao *UserDAO) FindByEmail(ctx context.Context, email string) (obj model.Us
 	return
 }
 
+func (dao *UserDAO) FindById(ctx context.Context, id int64) (obj model.User, err error) {
+	// SELECT * FROM `users` WHERE `id` = ? LIMIT 1
+	err = dao.db.WithContext(ctx).Where("id = ?", id).First(&obj).Error
+	return
+}
+
 func (dao *UserDAO) Insert(ctx context.Context, obj model.User) error {
 	now := time.Now().UnixMilli()
 	obj.CreateTime = now

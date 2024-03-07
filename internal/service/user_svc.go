@@ -54,3 +54,7 @@ func (svc *UserService) SignUp(ctx context.Context, obj domain.User) error {
 
 	return svc.repo.Create(ctx, obj)
 }
+
+func (svc *UserService) Profile(ctx context.Context, uid int64) (domain.User, error) {
+	return domain.User{}, nil
+}
