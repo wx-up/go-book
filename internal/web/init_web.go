@@ -54,7 +54,7 @@ func registerUserRoutes(engine *gin.Engine) {
 	ug := engine.Group("/users")
 	// 依赖注入的写法，遵循一个原则：我要用的东西我不会在内部自己初始化，由外部传入
 	userDao := dao.NewUserDAO(global.DB)
-	repo := repository.NewUserRepository(userDao)
+	repo := repository.NewUserRepository(userDao, nil)
 	svc := service.NewUserService(repo)
 	u := NewUserHandler(svc)
 	ug.POST("/signup", u.SignUp)
