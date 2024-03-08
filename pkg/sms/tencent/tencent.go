@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	typ "github.com/wx-up/go-book/pkg/sms"
+
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/wx-up/go-book/pkg/slice"
@@ -28,12 +30,12 @@ func NewService(client *sms.Client, appId string, signName string) *Service {
 	}
 }
 
-func (s *Service) Send(ctx context.Context, tplId string, params []string, phones ...string) error {
+func (s *Service) Send(ctx context.Context, tplId string, params []typ.NameArg, phones ...string) error {
 	resp, err := s.client.SendSmsWithContext(ctx, &sms.SendSmsRequest{
 		SmsSdkAppId: s.apdId,
 		SignName:    s.signName,
-		TemplateParamSet: slice.Map[string, *string](params, func(idx int, val string) *string {
-			return &val
+		TemplateParamSet: slice.Map[typ.NameArg, *string](params, func(idx int, val typ.NameArg) *string {
+			return &val.Val
 		}),
 		TemplateId: pkg.ToPtr[string](tplId),
 		PhoneNumberSet: slice.Map[string, *string](phones, func(idx int, val string) *string {
