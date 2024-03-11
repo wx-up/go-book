@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"testing"
 )
 
@@ -22,12 +23,19 @@ type User struct {
 	Phone Phone `json:"phone"`
 }
 
+func Ha() ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"name": "age",
+	})
+}
+
 func Test(t *testing.T) {
 	var u User
 	u.Phone = "13800138000"
 	bs, _ := json.Marshal(u)
 	fmt.Println(string(bs))
 
+	fmt.Println(rand.Intn(10000))
 	// nil指针寻址的话会 panic
 	// var s *string
 	// fmt.Println(s == nil)
