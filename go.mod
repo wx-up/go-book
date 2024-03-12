@@ -3,6 +3,7 @@ module github.com/wx-up/go-book
 go 1.20
 
 require (
+	github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.6
 	github.com/alibabacloud-go/dysmsapi-20170525/v3 v3.0.6
 	github.com/dlclark/regexp2 v1.10.0
 	github.com/gin-contrib/cors v1.5.0
@@ -10,6 +11,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/golang-jwt/jwt/v5 v5.2.0
+	github.com/google/wire v0.6.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/redis/go-redis/v9 v9.5.1
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.870
@@ -21,7 +23,6 @@ require (
 
 require (
 	github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.4 // indirect
-	github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.6 // indirect
 	github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68 // indirect
 	github.com/alibabacloud-go/endpoint-util v1.1.0 // indirect
 	github.com/alibabacloud-go/openapi-util v0.1.0 // indirect

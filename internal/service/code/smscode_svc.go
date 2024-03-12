@@ -22,11 +22,11 @@ type SmsCodeService struct {
 	tplId  string
 }
 
-func NewSmsCodeService(client sms.Service, repo *repository.CodeRepository, tplId string) *SmsCodeService {
+func NewSmsCodeService(client sms.Service, repo *repository.CodeRepository) *SmsCodeService {
 	return &SmsCodeService{
 		client: client,
 		repo:   repo,
-		tplId:  tplId,
+		tplId:  "",
 	}
 }
 

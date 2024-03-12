@@ -21,6 +21,6 @@ if cnt >= threshold then
 else
     -- 把 score 和 member 都设置成 now
     redis.call('ZADD', key, now, now)
-    redis.call('PEXPIRE', key, window/1000)
+    redis.call('PEXPIRE', key, window/1000/1000)
     return "false"
 end
