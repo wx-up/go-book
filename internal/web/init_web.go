@@ -3,6 +3,12 @@ package web
 import (
 	"time"
 
+	"github.com/wx-up/go-book/internal/repository/cache"
+
+	"github.com/redis/go-redis/v9"
+	"github.com/wx-up/go-book/internal/service/code"
+	"github.com/wx-up/go-book/pkg/sms/local"
+
 	"github.com/wx-up/go-book/internal/web/middleware"
 
 	"github.com/wx-up/go-book/internal/global"
@@ -44,19 +50,29 @@ func RegisterRoutes(engine *gin.Engine) {
 	//engine.Use(sessions.Sessions("ssid", store))
 
 	// 登陆插件
-	engine.Use(middleware.NewLoginJwtMiddlewareBuilder().Build())
-
+	engine.Use(middleware.NewLoginJwtMiddlewareBuilder().
+		IgnorePaths("/users/code/send").
+		IgnorePaths("/users/code/verify").
+		Build(),
+	)
 	// 注册业务路由
 	registerUserRoutes(engine)
 }
 
 func registerUserRoutes(engine *gin.Engine) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
 	ug := engine.Group("/users")
 	// 依赖注入的写法，遵循一个原则：我要用的东西我不会在内部自己初始化，由外部传入
 	userDao := dao.NewUserDAO(global.DB)
-	repo := repository.NewUserRepository(userDao, nil)
+	repo := repository.NewUserRepository(userDao, cache.NewUserCache(client))
 	svc := service.NewUserService(repo)
-	u := NewUserHandler(svc, nil)
+
+	codeSvc := code.NewSmsCodeService(local.NewService(), repository.NewCodeRepository(cache.NewCodeCache(client)), "")
+	u := NewUserHandler(svc, codeSvc)
 	ug.POST("/signup", u.SignUp)
 	ug.POST("/login", u.Login)
 	ug.POST("/edit", u.Edit)

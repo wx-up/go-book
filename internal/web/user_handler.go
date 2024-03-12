@@ -194,6 +194,10 @@ func (h *UserHandler) VerifyCode(ctx *gin.Context) {
 	}
 
 	err := h.codeSvc.Verify(ctx, biz, req.Phone, req.Code)
+	if err == code.ErrCodeVerifyTooMany {
+		ctx.JSON(http.StatusOK, Result{Msg: "验证过于频繁，请稍后再试", Code: 5})
+		return
+	}
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{Msg: "验证码错误", Code: 5})
 		return
