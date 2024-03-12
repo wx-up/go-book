@@ -56,9 +56,14 @@ func registerUserRoutes(engine *gin.Engine) {
 	userDao := dao.NewUserDAO(global.DB)
 	repo := repository.NewUserRepository(userDao, nil)
 	svc := service.NewUserService(repo)
-	u := NewUserHandler(svc)
+	u := NewUserHandler(svc, nil)
 	ug.POST("/signup", u.SignUp)
 	ug.POST("/login", u.Login)
 	ug.POST("/edit", u.Edit)
 	ug.POST("/profile", u.Profile)
+
+	// 验证码发送
+	ug.POST("/code/send", u.SendCode)
+	// 验证码验证+登陆
+	ug.POST("/code/verify", u.VerifyCode)
 }

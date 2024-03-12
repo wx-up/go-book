@@ -3,12 +3,13 @@ local cntKey = key..":cnt"
 local inputCode = ARGV[1]
 
 local cnt = redis.call("GET",cntKey)
-if cnt == nil then
+-- key 不存在时返回 false
+if cnt == false then
     return -3
 end
 
 local code = redis.call("GET",key)
-if code == nil then
+if code == false then
     return -3
 end
 

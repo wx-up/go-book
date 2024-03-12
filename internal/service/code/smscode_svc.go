@@ -10,6 +10,11 @@ import (
 	"github.com/wx-up/go-book/pkg/sms"
 )
 
+var (
+	ErrCodeSendTooMany   = repository.ErrCodeSendTooMany
+	ErrCodeVerifyTooMany = repository.ErrCodeVerifyTooMany
+)
+
 // SmsCodeService 基于短信的验证码服务
 type SmsCodeService struct {
 	client sms.Service
@@ -47,7 +52,6 @@ func (s *SmsCodeService) generateCode() string {
 	return fmt.Sprintf("%06d", num)
 }
 
-func (s *SmsCodeService) Verify(ctx context.Context, biz string, phone string, code string) (bool, error) {
-	err := s.repo.Verify(ctx, biz, phone, code)
-	return err == nil, err
+func (s *SmsCodeService) Verify(ctx context.Context, biz string, phone string, code string) error {
+	return s.repo.Verify(ctx, biz, phone, code)
 }

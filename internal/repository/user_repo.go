@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"time"
 
 	"github.com/wx-up/go-book/internal/repository/cache"
 
@@ -13,8 +15,8 @@ import (
 )
 
 var (
-	ErrUserDuplicateEmail = dao.ErrUserDuplicateEmail
-	ErrUserNotFound       = dao.ErrUserNotFound
+	ErrUserDuplicate = dao.ErrUserDuplicate
+	ErrUserNotFound  = dao.ErrUserNotFound
 )
 
 type UserRepository struct {
@@ -37,18 +39,19 @@ func (ur *UserRepository) FindByEmail(ctx context.Context, email string) (domain
 	if err != nil {
 		return domain.User{}, err
 	}
-	return domain.User{
-		Id:       u.Id,
-		Email:    u.Email,
-		Password: u.Password,
-	}, nil
+	return ur.modelToDomain(u), nil
 }
 
-func (ur *UserRepository) Create(ctx context.Context, u domain.User) error {
-	return ur.dao.Insert(ctx, model.User{
-		Email:    u.Email,
-		Password: u.Password,
-	})
+func (ur *UserRepository) FindByPhone(ctx context.Context, phone string) (domain.User, error) {
+	u, err := ur.dao.FindByPhone(ctx, phone)
+	if err != nil {
+		return domain.User{}, err
+	}
+	return ur.modelToDomain(u), nil
+}
+
+func (ur *UserRepository) Create(ctx context.Context, u domain.User) (int64, error) {
+	return ur.dao.Insert(ctx, ur.domainToModel(u))
 }
 
 func (ur *UserRepository) FindById(ctx context.Context, id int64) (domain.User, error) {
@@ -62,11 +65,7 @@ func (ur *UserRepository) FindById(ctx context.Context, id int64) (domain.User, 
 		return domain.User{}, err
 	}
 
-	u = domain.User{
-		Id:       obj.Id,
-		Email:    obj.Email,
-		Password: obj.Password,
-	}
+	u = ur.modelToDomain(obj)
 
 	// 写缓存失败的话，这里只是打日志，不处理错误
 	// 缓存设置失败一般不是特别大的问题，可能是偶发性的，比如网络问题
@@ -76,4 +75,30 @@ func (ur *UserRepository) FindById(ctx context.Context, id int64) (domain.User, 
 		// 打日志，做监控
 	}
 	return u, nil
+}
+
+func (ur *UserRepository) domainToModel(u domain.User) model.User {
+	obj := model.User{
+		Id:       u.Id,
+		Email:    sql.NullString{String: u.Email, Valid: u.Email != ""},
+		Password: u.Password,
+		Phone: sql.NullString{
+			String: u.Phone,
+			Valid:  u.Phone != "",
+		},
+	}
+	if !u.CreateTime.IsZero() {
+		obj.CreateTime = u.CreateTime.UnixMilli()
+	}
+	return obj
+}
+
+func (ur *UserRepository) modelToDomain(u model.User) domain.User {
+	return domain.User{
+		Id:         u.Id,
+		Email:      u.Email.String,
+		Password:   u.Password,
+		Phone:      u.Phone.String,
+		CreateTime: time.UnixMilli(u.CreateTime),
+	}
 }

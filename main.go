@@ -24,6 +24,7 @@ func main() {
 		panic(err)
 	}
 
+	global.DB.Create(&model.User{})
 	// 初始化表结构
 	err = model.InitTables(global.DB)
 	if err != nil {

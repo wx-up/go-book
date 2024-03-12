@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
 	"testing"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type Phone string
@@ -40,4 +43,19 @@ func Test(t *testing.T) {
 	// var s *string
 	// fmt.Println(s == nil)
 	// fmt.Println(*s)
+}
+
+var luaTest = `
+return true
+`
+
+func Test_Redis(t *testing.T) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+	val, err := client.Eval(context.Background(), luaTest, []string{}).Bool()
+	fmt.Println(err == redis.Nil)
+	fmt.Println(val)
 }

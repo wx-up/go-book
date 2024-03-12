@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/wx-up/go-book/internal/service/code"
+
 	"github.com/wx-up/go-book/internal/web/middleware"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -16,13 +18,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const biz = "login"
+
 type UserHandler struct {
 	svc         *service.UserService
+	codeSvc     *code.SmsCodeService
 	emailExp    *regexp.Regexp
 	passwordExp *regexp.Regexp
 }
 
-func NewUserHandler(svc *service.UserService) *UserHandler {
+func NewUserHandler(svc *service.UserService, codeSvc *code.SmsCodeService) *UserHandler {
 	const (
 		emailRegexPattern    = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
 		passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$`
@@ -31,6 +36,7 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 		svc:         svc,
 		emailExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
+		codeSvc:     codeSvc,
 	}
 }
 
@@ -72,7 +78,7 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 		Password: req.Password,
 	})
 
-	if err == service.ErrUserDuplicateEmail {
+	if err == service.ErrUserDuplicate {
 		ctx.String(http.StatusOK, "该邮箱已注册")
 		return
 	}
@@ -119,14 +125,7 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	//}
 
 	// jwt 保持登陆状态
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, middleware.UserClaim{
-		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   "go-book",
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * 60)), // 设置有效期
-		},
-		Uid: u.Id,
-	})
-	jwtToken, err := token.SignedString([]byte("go-book"))
+	jwtToken, err := h.generateJwtToken(u)
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 		return
@@ -136,8 +135,81 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	ctx.String(http.StatusOK, "登陆成功")
 }
 
+func (h *UserHandler) generateJwtToken(u domain.User) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, middleware.UserClaim{
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   "go-book",
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * 60)), // 设置有效期
+		},
+		Uid: u.Id,
+	})
+	jwtToken, err := token.SignedString([]byte("go-book"))
+	if err != nil {
+		return "", err
+	}
+	return jwtToken, nil
+}
+
 func (h *UserHandler) Edit(ctx *gin.Context) {
 }
 
 func (h *UserHandler) Profile(ctx *gin.Context) {
+}
+
+func (h *UserHandler) SendCode(ctx *gin.Context) {
+	type Req struct {
+		Phone string `json:"phone"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+
+	// 需要正则表达式强验证
+	if len(req.Phone) != 11 {
+		ctx.JSON(http.StatusOK, Result{Msg: "手机号格式错误", Code: 4})
+		return
+	}
+
+	// 发送验证码
+	err := h.codeSvc.Send(ctx, biz, req.Phone)
+	switch err {
+	case nil:
+		ctx.JSON(http.StatusOK, Result{Msg: "验证码发送成功"})
+	case code.ErrCodeSendTooMany:
+		ctx.JSON(http.StatusOK, Result{Msg: "验证码发送过于频繁，请稍后再试", Code: 2})
+	default:
+		ctx.JSON(http.StatusOK, Result{Msg: "系统错误", Code: 5})
+	}
+}
+
+func (h *UserHandler) VerifyCode(ctx *gin.Context) {
+	type Req struct {
+		Phone string `json:"phone"`
+		Code  string `json:"code"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+
+	err := h.codeSvc.Verify(ctx, biz, req.Phone, req.Code)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{Msg: "验证码错误", Code: 5})
+		return
+	}
+
+	// 登陆用户
+	u, err := h.svc.FindOrCreateByPhone(ctx, req.Phone)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{Msg: "验证码错误", Code: 5})
+		return
+	}
+	jwtToken, err := h.generateJwtToken(u)
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+	ctx.Header("x-jwt-token", jwtToken)
+	ctx.String(http.StatusOK, "登陆成功")
 }
