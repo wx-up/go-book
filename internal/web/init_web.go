@@ -65,7 +65,7 @@ func registerUserRoutes(engine *gin.Engine) {
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
-	ug := engine.Group("/users")
+
 	// 依赖注入的写法，遵循一个原则：我要用的东西我不会在内部自己初始化，由外部传入
 	userDao := dao.NewUserDAO(global.DB)
 	repo := repository.NewUserRepository(userDao, cache.NewUserCache(client))
@@ -73,13 +73,5 @@ func registerUserRoutes(engine *gin.Engine) {
 
 	codeSvc := code.NewSmsCodeService(local.NewService(), repository.NewCodeRepository(cache.NewCodeCache(client)), "")
 	u := NewUserHandler(svc, codeSvc)
-	ug.POST("/signup", u.SignUp)
-	ug.POST("/login", u.Login)
-	ug.POST("/edit", u.Edit)
-	ug.POST("/profile", u.Profile)
-
-	// 验证码发送
-	ug.POST("/code/send", u.SendCode)
-	// 验证码验证+登陆
-	ug.POST("/code/verify", u.VerifyCode)
+	u.RegisterRoutes(engine)
 }

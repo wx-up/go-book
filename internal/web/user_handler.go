@@ -40,6 +40,19 @@ func NewUserHandler(svc *service.UserService, codeSvc *code.SmsCodeService) *Use
 	}
 }
 
+func (h *UserHandler) RegisterRoutes(engine *gin.Engine) {
+	ug := engine.Group("/users")
+	ug.POST("/signup", h.SignUp)
+	ug.POST("/login", h.Login)
+	ug.POST("/edit", h.Edit)
+	ug.POST("/profile", h.Profile)
+
+	// 验证码发送
+	ug.POST("/code/send", h.SendCode)
+	// 验证码验证+登陆
+	ug.POST("/code/verify", h.VerifyCode)
+}
+
 func (h *UserHandler) SignUp(ctx *gin.Context) {
 	type SignUpReq struct {
 		Email    string `json:"email"`
