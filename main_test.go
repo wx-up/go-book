@@ -7,8 +7,16 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/redis/go-redis/v9"
 )
+
+func Test_Fail(t *testing.T) {
+	a := 1
+	require.Equal(t, a, 2)
+	fmt.Println(666)
+}
 
 type Phone string
 
