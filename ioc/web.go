@@ -13,7 +13,7 @@ import (
 	"github.com/wx-up/go-book/internal/web"
 )
 
-func InitWeb(uh *web.UserHandler, ms []gin.HandlerFunc) *gin.Engine {
+func InitWeb(ms []gin.HandlerFunc, uh *web.UserHandler) *gin.Engine {
 	engine := gin.Default()
 	engine.Use(ms...)
 	uh.RegisterRoutes(engine)

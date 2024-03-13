@@ -27,6 +27,8 @@ type UserHandler struct {
 	passwordExp *regexp.Regexp
 }
 
+var _ handler = (*UserHandler)(nil)
+
 func NewUserHandler(svc *service.UserService, codeSvc *code.SmsCodeService) *UserHandler {
 	const (
 		emailRegexPattern    = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
