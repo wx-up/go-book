@@ -18,11 +18,11 @@ var (
 // SmsCodeService 基于短信的验证码服务
 type SmsCodeService struct {
 	client sms.Service
-	repo   *repository.CodeRepository
+	repo   repository.CodeRepository
 	tplId  string
 }
 
-func NewSmsCodeService(client sms.Service, repo *repository.CodeRepository) *SmsCodeService {
+func NewSmsCodeService(client sms.Service, repo repository.CodeRepository) Service {
 	return &SmsCodeService{
 		client: client,
 		repo:   repo,

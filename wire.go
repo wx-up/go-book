@@ -22,15 +22,15 @@ func InitWebService() *gin.Engine {
 
 		// 用户服务
 		service.NewUserService,
-		repository.NewUserRepository,
-		dao.NewUserDAO,
-		cache.NewUserCache,
+		repository.NewCacheUserRepository,
+		dao.NewGORMUserDAO,
+		cache.NewRedisUserCache,
 
 		// 短信服务
 		code.NewSmsCodeService,
 		ioc.CreateSMSService,
-		repository.NewCodeRepository,
-		cache.NewCodeCache,
+		repository.NewCacheCodeRepository,
+		cache.NewRedisCodeCache,
 
 		// user web
 		web.NewUserHandler,

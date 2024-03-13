@@ -10,19 +10,24 @@ import (
 	"github.com/wx-up/go-book/internal/domain"
 )
 
-type UserCache struct {
+type UserCache interface {
+	Set(ctx context.Context, u domain.User) error
+	Get(ctx context.Context, id int64) (domain.User, error)
+}
+
+type RedisUserCache struct {
 	cmd        redis.Cmdable
 	expiration time.Duration
 }
 
-func NewUserCache(cmd redis.Cmdable) *UserCache {
-	return &UserCache{
+func NewRedisUserCache(cmd redis.Cmdable) UserCache {
+	return &RedisUserCache{
 		cmd:        cmd,
 		expiration: time.Minute * 15,
 	}
 }
 
-func (uc *UserCache) Set(ctx context.Context, u domain.User) error {
+func (uc *RedisUserCache) Set(ctx context.Context, u domain.User) error {
 	val, err := json.Marshal(u)
 	if err != nil {
 		return err
@@ -34,7 +39,7 @@ func (uc *UserCache) Set(ctx context.Context, u domain.User) error {
 var ErrKeyNotExist = fmt.Errorf("key not exist")
 
 // Get 需要区分是 redis报错 还是 key 不存在
-func (uc *UserCache) Get(ctx context.Context, id int64) (domain.User, error) {
+func (uc *RedisUserCache) Get(ctx context.Context, id int64) (domain.User, error) {
 	key := uc.key(id)
 	val, err := uc.cmd.Get(ctx, key).Bytes()
 	// key 不存在的时，redis 报错 redis.Nil
@@ -49,7 +54,7 @@ func (uc *UserCache) Get(ctx context.Context, id int64) (domain.User, error) {
 	return u, err
 }
 
-func (uc *UserCache) key(id int64) string {
+func (uc *RedisUserCache) key(id int64) string {
 	const keyPattern = "user:info:%d"
 	return fmt.Sprintf(keyPattern, id)
 }

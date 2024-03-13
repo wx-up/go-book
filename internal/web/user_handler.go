@@ -20,16 +20,17 @@ import (
 
 const biz = "login"
 
+// UserHandler 不需要抽象成接口，因为只有 gin 会使用它，其他业务不会依赖它
 type UserHandler struct {
-	svc         *service.UserService
-	codeSvc     *code.SmsCodeService
+	svc         service.UserService
+	codeSvc     code.Service
 	emailExp    *regexp.Regexp
 	passwordExp *regexp.Regexp
 }
 
 var _ handler = (*UserHandler)(nil)
 
-func NewUserHandler(svc *service.UserService, codeSvc *code.SmsCodeService) *UserHandler {
+func NewUserHandler(svc service.UserService, codeSvc code.Service) *UserHandler {
 	const (
 		emailRegexPattern    = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
 		passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$`

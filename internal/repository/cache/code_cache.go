@@ -22,18 +22,23 @@ var (
 	ErrCodeNotExists     = fmt.Errorf("code not exists")
 )
 
-type CodeCache struct {
+type CodeCache interface {
+	Set(ctx context.Context, biz, connect, code string) error // connect 联系方式可以是手机号，也可以是邮箱
+	Verify(ctx context.Context, biz, connect, inputCode string) error
+}
+
+type RedisCodeCache struct {
 	cmd redis.Cmdable
 }
 
-func NewCodeCache(cmd redis.Cmdable) *CodeCache {
-	return &CodeCache{
+func NewRedisCodeCache(cmd redis.Cmdable) CodeCache {
+	return &RedisCodeCache{
 		cmd: cmd,
 	}
 }
 
-func (c *CodeCache) Set(ctx context.Context, biz, phone, code string) error {
-	key := c.key(biz, phone)
+func (c *RedisCodeCache) Set(ctx context.Context, biz, connect, code string) error {
+	key := c.key(biz, connect)
 	res, err := c.cmd.Eval(ctx, luaSendCodeScript, []string{key}, code).Int()
 	if err != nil {
 		return err
@@ -50,8 +55,8 @@ func (c *CodeCache) Set(ctx context.Context, biz, phone, code string) error {
 	}
 }
 
-func (c *CodeCache) Verify(ctx context.Context, biz, phone, inputCode string) error {
-	key := c.key(biz, phone)
+func (c *RedisCodeCache) Verify(ctx context.Context, biz, connect, inputCode string) error {
+	key := c.key(biz, connect)
 	res, err := c.cmd.Eval(ctx, luaVerifyCodeScript, []string{key}, inputCode).Int()
 	if err != nil {
 		return err
@@ -69,6 +74,6 @@ func (c *CodeCache) Verify(ctx context.Context, biz, phone, inputCode string) er
 	return errors.New("系统错误")
 }
 
-func (c *CodeCache) key(biz, phone string) string {
+func (c *RedisCodeCache) key(biz, phone string) string {
 	return fmt.Sprintf("code:%s:%s", biz, phone)
 }

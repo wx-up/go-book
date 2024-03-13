@@ -16,35 +16,42 @@ var (
 	ErrUserNotFound  = gorm.ErrRecordNotFound
 )
 
-type UserDAO struct {
+type UserDAO interface {
+	FindByEmail(ctx context.Context, email string) (obj model.User, err error)
+	FindByPhone(ctx context.Context, phone string) (obj model.User, err error)
+	FindById(ctx context.Context, id int64) (obj model.User, err error)
+	Insert(ctx context.Context, obj model.User) (int64, error)
+}
+
+type GORMUserDAO struct {
 	db *gorm.DB
 }
 
-func NewUserDAO(db *gorm.DB) *UserDAO {
-	return &UserDAO{
+func NewGORMUserDAO(db *gorm.DB) UserDAO {
+	return &GORMUserDAO{
 		db: db,
 	}
 }
 
-func (dao *UserDAO) FindByEmail(ctx context.Context, email string) (obj model.User, err error) {
+func (dao *GORMUserDAO) FindByEmail(ctx context.Context, email string) (obj model.User, err error) {
 	// SELECT * FROM `users` WHERE `email` = ? LIMIT 1
 	err = dao.db.WithContext(ctx).Where("email = ?", email).First(&obj).Error
 	return
 }
 
-func (dao *UserDAO) FindByPhone(ctx context.Context, phone string) (obj model.User, err error) {
+func (dao *GORMUserDAO) FindByPhone(ctx context.Context, phone string) (obj model.User, err error) {
 	// SELECT * FROM `users` WHERE `phone` = ? LIMIT 1
 	err = dao.db.WithContext(ctx).Where("phone = ?", phone).First(&obj).Error
 	return
 }
 
-func (dao *UserDAO) FindById(ctx context.Context, id int64) (obj model.User, err error) {
+func (dao *GORMUserDAO) FindById(ctx context.Context, id int64) (obj model.User, err error) {
 	// SELECT * FROM `users` WHERE `id` = ? LIMIT 1
 	err = dao.db.WithContext(ctx).Where("id = ?", id).First(&obj).Error
 	return
 }
 
-func (dao *UserDAO) Insert(ctx context.Context, obj model.User) (int64, error) {
+func (dao *GORMUserDAO) Insert(ctx context.Context, obj model.User) (int64, error) {
 	now := time.Now().UnixMilli()
 	obj.CreateTime = now
 	obj.UpdateTime = now
