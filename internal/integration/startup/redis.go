@@ -1,11 +1,10 @@
-package ioc
+package startup
 
 import (
 	"context"
 	"sync"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/wx-up/go-book/config"
 )
 
 var (
@@ -13,12 +12,10 @@ var (
 	redisClientOnce sync.Once
 )
 
-func CreateRedis() redis.Cmdable {
+func InitTestRedis() redis.Cmdable {
 	redisClientOnce.Do(func() {
 		redisClient = redis.NewClient(&redis.Options{
-			Addr:     config.C.Redis.Addr,
-			Password: config.C.Redis.Password, // no password set
-			DB:       config.C.Redis.DB,       // use default DB
+			Addr: "localhost:7379",
 		})
 		if err := redisClient.Ping(context.Background()).Err(); err != nil {
 			panic(err)
