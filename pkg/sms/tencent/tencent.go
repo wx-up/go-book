@@ -21,6 +21,10 @@ type Service struct {
 	signName *string
 }
 
+func (s *Service) Type() string {
+	return "tencent"
+}
+
 // NewService 腾讯云的发送短信，需要一个 appId
 func NewService(client *sms.Client, appId string, signName string) *Service {
 	return &Service{

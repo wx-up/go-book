@@ -9,6 +9,10 @@ import (
 
 type Service struct{}
 
+func (s *Service) Type() string {
+	return "local"
+}
+
 func NewService() *Service {
 	return &Service{}
 }

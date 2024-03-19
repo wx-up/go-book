@@ -17,6 +17,10 @@ type Service struct {
 	signName string
 }
 
+func (s *Service) Type() string {
+	return "aliyun"
+}
+
 func NewService(client *sms.Client, signName string) *Service {
 	return &Service{
 		client:   client,

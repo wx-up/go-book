@@ -4,6 +4,7 @@ import "context"
 
 type Service interface {
 	Send(ctx context.Context, tplId string, params []NameArg, phones ...string) error
+	Type() string
 }
 
 // NameArg is a name-value pair for template parameters.
