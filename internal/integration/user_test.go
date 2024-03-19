@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUserHandler_E2E_SendCode(t *testing.T) {
+func TestUserHandler_SendCode(t *testing.T) {
 	server := startup.InitWebService()
 	redisClient := startup.InitTestRedis()
 	testCases := []struct {
