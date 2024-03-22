@@ -26,6 +26,9 @@ func InitWebService() *gin.Engine {
 		dao.NewGORMUserDAO,
 		cache.NewRedisUserCache,
 
+		// OAuth2 Wechat 服务
+		ioc.CreateOAuth2WechatService,
+
 		// 短信服务
 		code.NewSmsCodeService,
 		ioc.CreateSMSService,
@@ -34,6 +37,8 @@ func InitWebService() *gin.Engine {
 
 		// user web
 		web.NewUserHandler,
+		// OAuth2
+		web.NewOAuth2WechatHandler,
 
 		// 中间件
 		ioc.CreateMiddlewares,

@@ -4,8 +4,6 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/wx-up/go-book/pkg/ginx/middleware/ratelimit"
-
 	"github.com/wx-up/go-book/internal/web/middleware"
 
 	"github.com/gin-contrib/cors"
@@ -13,10 +11,14 @@ import (
 	"github.com/wx-up/go-book/internal/web"
 )
 
-func InitWeb(ms []gin.HandlerFunc, uh *web.UserHandler) *gin.Engine {
+func InitWeb(ms []gin.HandlerFunc,
+	uh *web.UserHandler,
+	wh *web.OAuth2WechatHandler,
+) *gin.Engine {
 	engine := gin.Default()
 	engine.Use(ms...)
 	uh.RegisterRoutes(engine)
+	wh.RegisterRoutes(engine)
 	return engine
 }
 
@@ -37,9 +39,10 @@ func CreateMiddlewares(cmd redis.Cmdable) []gin.HandlerFunc {
 		// 登陆
 		middleware.NewLoginJwtMiddlewareBuilder().
 			IgnorePaths("/users/code/send").
-			IgnorePaths("/users/code/verify").Build(),
+			IgnorePaths("/users/code/verify").
+			IgnorePaths("/oauth2/wechat/auth_url").Build(),
 
 		// 限流
-		ratelimit.NewBuilder(cmd, time.Second, 100).Build(),
+		// ratelimit.NewBuilder(cmd, time.Second, 100).Build(),
 	}
 }
