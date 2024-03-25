@@ -1,20 +1,15 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
-	"time"
+
+	"github.com/wx-up/go-book/internal/web"
 
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/gin-gonic/gin"
 )
-
-type UserClaim struct {
-	jwt.RegisteredClaims
-	Uid int64
-}
 
 // LoginJwtMiddlewareBuilder builder 模式
 type LoginJwtMiddlewareBuilder struct {
@@ -53,7 +48,7 @@ func (lm *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 			return
 		}
 
-		var userClaim UserClaim
+		var userClaim web.UserClaim
 		jwtStr := jwtSlice[1]
 
 		token, err := jwt.ParseWithClaims(jwtStr, &userClaim, func(token *jwt.Token) (interface{}, error) {
@@ -73,15 +68,15 @@ func (lm *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 		// 刷新 token
 		// jwt 的 token 刷新即使生成了一个新的 token
 		// 每隔10秒刷新一次
-		if userClaim.ExpiresAt.Sub(time.Now()) <= 50*time.Second {
-			userClaim.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Second * 60))
-			tokenStr, err := token.SignedString([]byte("go-book"))
-			if err != nil {
-				// 打印日志
-				fmt.Println(err)
-			}
-			ctx.Header("x-jwt-token", tokenStr)
-		}
+		//if userClaim.ExpiresAt.Sub(time.Now()) <= 50*time.Second {
+		//	userClaim.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Second * 60))
+		//	tokenStr, err := token.SignedString([]byte("go-book"))
+		//	if err != nil {
+		//		// 打印日志
+		//		fmt.Println(err)
+		//	}
+		//	ctx.Header("x-jwt-token", tokenStr)
+		//}
 
 		ctx.Set("claims", userClaim)
 	}

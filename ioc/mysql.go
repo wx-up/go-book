@@ -3,6 +3,8 @@ package ioc
 import (
 	"time"
 
+	"github.com/wx-up/go-book/internal/repository/dao/model"
+
 	"github.com/wx-up/go-book/config"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -15,6 +17,7 @@ func CreateMysql() *gorm.DB {
 	if err != nil {
 		panic(err)
 	}
+	_ = model.InitTables(db)
 	sqlDB, err := db.DB()
 	if err != nil {
 		panic(err)

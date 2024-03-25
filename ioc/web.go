@@ -28,7 +28,7 @@ func CreateMiddlewares(cmd redis.Cmdable) []gin.HandlerFunc {
 		cors.New(cors.Config{
 			AllowMethods:     []string{"PUT", "PATCH", "POST"},
 			AllowHeaders:     []string{"Authorization", "Content-Type"},
-			ExposeHeaders:    []string{"X-Jwt-Token"},
+			ExposeHeaders:    []string{"X-Jwt-Token", "X-Refresh-Token"},
 			AllowCredentials: true,
 			AllowOriginFunc: func(origin string) bool {
 				return true
@@ -41,6 +41,7 @@ func CreateMiddlewares(cmd redis.Cmdable) []gin.HandlerFunc {
 			IgnorePaths("/users/code/send").
 			IgnorePaths("/users/code/verify").
 			IgnorePaths("/oauth2/wechat/callback").
+			IgnorePaths("/users/refresh_token").
 			IgnorePaths("/oauth2/wechat/auth_url").Build(),
 
 		// 限流

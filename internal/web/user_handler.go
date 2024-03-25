@@ -3,6 +3,8 @@ package web
 import (
 	"net/http"
 
+	"github.com/golang-jwt/jwt/v5"
+
 	"github.com/wx-up/go-book/internal/service/code"
 
 	"github.com/wx-up/go-book/internal/domain"
@@ -50,6 +52,9 @@ func (h *UserHandler) RegisterRoutes(engine *gin.Engine) {
 	ug.POST("/code/send", h.SendCode)
 	// 验证码验证+登陆
 	ug.POST("/code/verify", h.VerifyCode)
+
+	// 刷新 token
+	ug.POST("/refresh_token", h.RefreshToken)
 }
 
 func (h *UserHandler) SignUp(ctx *gin.Context) {
@@ -136,8 +141,14 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	//	return
 	//}
 
-	// jwt 保持登陆状态
+	// 设置 access_token
 	err = h.setJwtToken(ctx, u)
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+	// 设置 refresh_token
+	err = h.setRefreshToken(ctx, u)
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 		return
@@ -212,4 +223,36 @@ func (h *UserHandler) VerifyCode(ctx *gin.Context) {
 	}
 	ctx.Header("x-jwt-token", jwtToken)
 	ctx.String(http.StatusOK, "登陆成功")
+}
+
+func (h *UserHandler) RefreshToken(ctx *gin.Context) {
+	type Req struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	if req.RefreshToken == "" {
+		ctx.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	var t TokenClaim
+	token, err := jwt.ParseWithClaims(req.RefreshToken, &t, func(token *jwt.Token) (interface{}, error) {
+		return []byte("go-book"), nil
+	})
+	if err != nil || !token.Valid {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	if !t.IsRefresh {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	err = h.setJwtToken(ctx, domain.User{Id: t.Uid})
+	if err != nil {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{Msg: "刷新成功"})
 }
