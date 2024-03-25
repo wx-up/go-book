@@ -1,7 +1,14 @@
 package web
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
+	"time"
+
+	"github.com/lithammer/shortuuid/v4"
+
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/wx-up/go-book/internal/service"
 
@@ -31,7 +38,17 @@ func (h *OAuth2WechatHandler) RegisterRoutes(engine *gin.Engine) {
 }
 
 func (h *OAuth2WechatHandler) AuthURL(ctx *gin.Context) {
-	url, err := h.svc.AuthUrl(ctx)
+	state := shortuuid.New()
+	url, err := h.svc.AuthUrl(ctx, state)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: -1,
+			Msg:  "服务器错误",
+			Data: nil,
+		})
+		return
+	}
+	err = h.setStateCookie(ctx, state)
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: -1,
@@ -49,14 +66,42 @@ func (h *OAuth2WechatHandler) AuthURL(ctx *gin.Context) {
 	})
 }
 
+func (h *OAuth2WechatHandler) setStateCookie(ctx *gin.Context, state string) error {
+	token := jwt.NewWithClaims(jwt.SigningMethodES256, StateClaim{
+		State: state,
+		// 整个扫码流程 1 分钟足够
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute)),
+		},
+	})
+	t, err := token.SignedString([]byte("state"))
+	if err != nil {
+		return fmt.Errorf("生成 state jwt 失败：%w", err)
+	}
+	ctx.SetCookie("jwt-state", t, 60, "/oauth2/wechat/callback", "", false, true)
+	return nil
+}
+
+type StateClaim struct {
+	jwt.RegisteredClaims
+	State string
+}
+
 func (h *OAuth2WechatHandler) Callback(ctx *gin.Context) {
 	// 拿到临时授权码
 	code := ctx.Query("code")
-	// 拿到 state
-	state := ctx.Query("state")
+	err := h.verifyState(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: -1,
+			Msg:  "登陆失败",
+			Data: nil,
+		})
+		return
+	}
 
 	// 获取 openId、unionId
-	res, err := h.svc.Verify(ctx, code, state)
+	res, err := h.svc.Verify(ctx, code)
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: -1,
@@ -91,4 +136,31 @@ func (h *OAuth2WechatHandler) Callback(ctx *gin.Context) {
 		Code: 0,
 		Msg:  "登陆成功",
 	})
+}
+
+func (h *OAuth2WechatHandler) verifyState(ctx *gin.Context) error {
+	// 拿到 state
+	state := ctx.Query("state")
+	// 拿到 cookie
+	t, err := ctx.Cookie("jwt-state")
+	if err != nil {
+		// 记录日志做好监控
+		ctx.JSON(http.StatusOK, Result{
+			Code: -1,
+			Msg:  "登陆失败",
+			Data: nil,
+		})
+		return fmt.Errorf("获取 state cookie 错误：%w", err)
+	}
+	var c StateClaim
+	tRes, err := jwt.ParseWithClaims(t, &c, func(token *jwt.Token) (interface{}, error) {
+		return []byte("state"), nil
+	})
+	if err != nil || !tRes.Valid {
+		return fmt.Errorf("state 无效")
+	}
+	if c.State != state {
+		return errors.New("state 不相等")
+	}
+	return nil
 }

@@ -22,7 +22,7 @@ func Test_service_Verify_manual(t *testing.T) {
 		panic("WECHAT_APP_SECRET not found in environment variables")
 	}
 	svc := NewService(appId, appSecret)
-	res, err := svc.Verify(context.Background(), "code", "sate")
+	res, err := svc.Verify(context.Background(), "code")
 	require.NoError(t, err)
 	t.Log(res)
 }
