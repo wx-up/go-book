@@ -21,6 +21,7 @@ type UserService interface {
 	SignUp(ctx context.Context, obj domain.User) error
 	FindOrCreateByPhone(ctx context.Context, phone string) (domain.User, error)
 	Profile(ctx context.Context, uid int64) (domain.User, error)
+	FindOrCreateByWechat(ctx context.Context, info domain.WechatInfo) (domain.User, error)
 }
 
 type userService struct {
@@ -31,6 +32,27 @@ func NewUserService(repo repository.UserRepository) UserService {
 	return &userService{
 		repo: repo,
 	}
+}
+
+func (svc *userService) FindOrCreateByWechat(ctx context.Context, info domain.WechatInfo) (domain.User, error) {
+	// 快路径
+	obj, err := svc.repo.FindByWechatOpenId(ctx, info.OpenId)
+	if err != repository.ErrUserNotFound {
+		return obj, err
+	}
+
+	// 慢路径
+	// 插入新用户
+	u := domain.User{
+		WeChat: info,
+	}
+	id, err := svc.repo.Create(ctx, u)
+	if err != nil && err != repository.ErrUserDuplicate {
+		return domain.User{}, err
+	}
+
+	// 这里还有一个问题：主从延迟，可能会查不到新插入的数据
+	return svc.repo.FindById(ctx, id)
 }
 
 func (svc *userService) Login(ctx context.Context, obj domain.User) (domain.User, error) {

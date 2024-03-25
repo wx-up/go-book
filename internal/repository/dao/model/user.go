@@ -10,6 +10,9 @@ type User struct {
 	Password string
 	Phone    sql.NullString `gorm:"unique"`
 
+	WechatOpenId  sql.NullString
+	WechatUnionId sql.NullString
+
 	// 时间戳，单位毫秒
 	CreateTime int64
 	UpdateTime int64

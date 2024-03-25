@@ -2,13 +2,8 @@ package web
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/wx-up/go-book/internal/service/code"
-
-	"github.com/wx-up/go-book/internal/web/middleware"
-
-	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/wx-up/go-book/internal/domain"
 
@@ -26,6 +21,7 @@ type UserHandler struct {
 	codeSvc     code.Service
 	emailExp    *regexp.Regexp
 	passwordExp *regexp.Regexp
+	jwtHandler
 }
 
 var _ handler = (*UserHandler)(nil)
@@ -141,29 +137,13 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	//}
 
 	// jwt 保持登陆状态
-	jwtToken, err := h.generateJwtToken(u)
+	err = h.setJwtToken(ctx, u)
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
-	ctx.Header("x-jwt-token", jwtToken)
 
 	ctx.String(http.StatusOK, "登陆成功")
-}
-
-func (h *UserHandler) generateJwtToken(u domain.User) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, middleware.UserClaim{
-		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   "go-book",
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * 60)), // 设置有效期
-		},
-		Uid: u.Id,
-	})
-	jwtToken, err := token.SignedString([]byte("go-book"))
-	if err != nil {
-		return "", err
-	}
-	return jwtToken, nil
 }
 
 func (h *UserHandler) Edit(ctx *gin.Context) {

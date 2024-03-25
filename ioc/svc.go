@@ -13,5 +13,10 @@ func CreateOAuth2WechatService() wechat.Service {
 		panic("WECHAT_APP_ID not found in environment variables")
 	}
 
-	return wechat.NewService(appId)
+	appSecret, ok := os.LookupEnv("WECHAT_APP_SECRET")
+	if !ok {
+		panic("WECHAT_APP_SECRET not found in environment variables")
+	}
+
+	return wechat.NewService(appId, appSecret)
 }

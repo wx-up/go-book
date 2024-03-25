@@ -21,6 +21,7 @@ type UserDAO interface {
 	FindByPhone(ctx context.Context, phone string) (obj model.User, err error)
 	FindById(ctx context.Context, id int64) (obj model.User, err error)
 	Insert(ctx context.Context, obj model.User) (int64, error)
+	FindByWeChatOpenId(ctx context.Context, openId string) (model.User, error)
 }
 
 type GORMUserDAO struct {
@@ -31,6 +32,12 @@ func NewGORMUserDAO(db *gorm.DB) UserDAO {
 	return &GORMUserDAO{
 		db: db,
 	}
+}
+
+func (dao *GORMUserDAO) FindByWeChatOpenId(ctx context.Context, openId string) (obj model.User, err error) {
+	// SELECT * FROM `users` WHERE `wechat_open_id` = ? LIMIT 1
+	err = dao.db.WithContext(ctx).Where("wechat_open_id = ?", openId).First(&obj).Error
+	return
 }
 
 func (dao *GORMUserDAO) FindByEmail(ctx context.Context, email string) (obj model.User, err error) {

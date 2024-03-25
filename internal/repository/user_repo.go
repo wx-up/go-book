@@ -24,6 +24,7 @@ type UserRepository interface {
 	FindByPhone(ctx context.Context, phone string) (domain.User, error)
 	Create(ctx context.Context, u domain.User) (int64, error)
 	FindById(ctx context.Context, id int64) (domain.User, error)
+	FindByWechatOpenId(ctx context.Context, openId string) (domain.User, error)
 }
 
 type CacheUserRepository struct {
@@ -36,6 +37,14 @@ func NewCacheUserRepository(dao dao.UserDAO, cache cache.UserCache) UserReposito
 		dao:   dao,
 		cache: cache,
 	}
+}
+
+func (ur *CacheUserRepository) FindByWechatOpenId(ctx context.Context, openId string) (domain.User, error) {
+	u, err := ur.dao.FindByWeChatOpenId(ctx, openId)
+	if err != nil {
+		return domain.User{}, err
+	}
+	return ur.modelToDomain(u), nil
 }
 
 // FindByEmail 用于登陆场景，根据 email 查找用户
@@ -86,12 +95,23 @@ func (ur *CacheUserRepository) FindById(ctx context.Context, id int64) (domain.U
 
 func (ur *CacheUserRepository) domainToModel(u domain.User) model.User {
 	obj := model.User{
-		Id:       u.Id,
-		Email:    sql.NullString{String: u.Email, Valid: u.Email != ""},
+		Id: u.Id,
+		Email: sql.NullString{
+			String: u.Email,
+			Valid:  u.Email != "",
+		},
 		Password: u.Password,
 		Phone: sql.NullString{
 			String: u.Phone,
 			Valid:  u.Phone != "",
+		},
+		WechatOpenId: sql.NullString{
+			String: u.WeChat.OpenId,
+			Valid:  u.WeChat.OpenId != "",
+		},
+		WechatUnionId: sql.NullString{
+			String: u.WeChat.UnionId,
+			Valid:  u.WeChat.UnionId != "",
 		},
 	}
 	if !u.CreateTime.IsZero() {
@@ -102,10 +122,14 @@ func (ur *CacheUserRepository) domainToModel(u domain.User) model.User {
 
 func (ur *CacheUserRepository) modelToDomain(u model.User) domain.User {
 	return domain.User{
-		Id:         u.Id,
-		Email:      u.Email.String,
-		Password:   u.Password,
-		Phone:      u.Phone.String,
+		Id:       u.Id,
+		Email:    u.Email.String,
+		Password: u.Password,
+		Phone:    u.Phone.String,
+		WeChat: domain.WechatInfo{
+			OpenId:  u.WechatOpenId.String,
+			UnionId: u.WechatUnionId.String,
+		},
 		CreateTime: time.UnixMilli(u.CreateTime),
 	}
 }

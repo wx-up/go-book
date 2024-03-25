@@ -40,6 +40,7 @@ func CreateMiddlewares(cmd redis.Cmdable) []gin.HandlerFunc {
 		middleware.NewLoginJwtMiddlewareBuilder().
 			IgnorePaths("/users/code/send").
 			IgnorePaths("/users/code/verify").
+			IgnorePaths("/oauth2/wechat/callback").
 			IgnorePaths("/oauth2/wechat/auth_url").Build(),
 
 		// 限流
