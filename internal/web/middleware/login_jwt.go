@@ -64,7 +64,10 @@ func (lm *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-
+		if userClaim.IsRefresh {
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
 		// 刷新 token
 		// jwt 的 token 刷新即使生成了一个新的 token
 		// 每隔10秒刷新一次
