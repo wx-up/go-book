@@ -1,7 +1,11 @@
 package web
 
 import (
+	"fmt"
 	"net/http"
+	"time"
+
+	"github.com/redis/go-redis/v9"
 
 	"github.com/golang-jwt/jwt/v5"
 
@@ -24,11 +28,12 @@ type UserHandler struct {
 	emailExp    *regexp.Regexp
 	passwordExp *regexp.Regexp
 	jwtHandler
+	cmd redis.Cmdable
 }
 
 var _ handler = (*UserHandler)(nil)
 
-func NewUserHandler(svc service.UserService, codeSvc code.Service) *UserHandler {
+func NewUserHandler(svc service.UserService, codeSvc code.Service, cmd redis.Cmdable) *UserHandler {
 	const (
 		emailRegexPattern    = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
 		passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$`
@@ -38,6 +43,7 @@ func NewUserHandler(svc service.UserService, codeSvc code.Service) *UserHandler 
 		emailExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
 		codeSvc:     codeSvc,
+		cmd:         cmd,
 	}
 }
 
@@ -55,6 +61,28 @@ func (h *UserHandler) RegisterRoutes(engine *gin.Engine) {
 
 	// 刷新 token
 	ug.POST("/refresh_token", h.RefreshToken)
+
+	// 退出登陆
+	ug.POST("/logout", h.Logout)
+}
+
+func (h *UserHandler) Logout(ctx *gin.Context) {
+	// 设置header 值为空，前端拿到空值之后会更新本地存储的 x-jwt-token 和 x-refresh-token，从而达到删除的效果
+	// 这一步应该和前端协商好
+	ctx.Header("x-jwt-token", "")
+	ctx.Header("x-refresh-token", "")
+
+	val, _ := ctx.Get("claims")
+	claims, ok := val.(*TokenClaim)
+	if !ok {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 0,
+			Msg:  "系统错误",
+		})
+		return
+	}
+	_ = h.cmd.Set(ctx, claims.Ssid, "", time.Hour).Err()
+	ctx.String(http.StatusOK, "退出登陆成功")
 }
 
 func (h *UserHandler) SignUp(ctx *gin.Context) {
@@ -142,18 +170,11 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	//}
 
 	// 设置 access_token
-	err = h.setJwtToken(ctx, u)
+	err = h.setLoginToken(ctx, u)
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
-	// 设置 refresh_token
-	err = h.setRefreshToken(ctx, u)
-	if err != nil {
-		ctx.String(http.StatusOK, "系统错误")
-		return
-	}
-
 	ctx.String(http.StatusOK, "登陆成功")
 }
 
@@ -216,12 +237,12 @@ func (h *UserHandler) VerifyCode(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, Result{Msg: "验证码错误", Code: 5})
 		return
 	}
-	jwtToken, err := h.generateJwtToken(u)
+	err = h.setLoginToken(ctx, u)
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
-	ctx.Header("x-jwt-token", jwtToken)
+
 	ctx.String(http.StatusOK, "登陆成功")
 }
 
@@ -245,11 +266,20 @@ func (h *UserHandler) RefreshToken(ctx *gin.Context) {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
+
 	if !t.IsRefresh {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	err = h.setJwtToken(ctx, domain.User{Id: t.Uid})
+
+	// 查看 ssid 是否在redis中
+	cnt, err := h.cmd.Exists(ctx, fmt.Sprintf("users:sid:%s", t.Ssid)).Result()
+	if err != nil || cnt > 0 {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	err = h.setJwtToken(ctx, domain.User{Id: t.Uid}, t.Ssid)
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return

@@ -1,8 +1,11 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/redis/go-redis/v9"
 
 	"github.com/wx-up/go-book/internal/web"
 
@@ -14,11 +17,13 @@ import (
 // LoginJwtMiddlewareBuilder builder 模式
 type LoginJwtMiddlewareBuilder struct {
 	whiteList []string
+	cmd       redis.Cmdable
 }
 
-func NewLoginJwtMiddlewareBuilder() *LoginJwtMiddlewareBuilder {
+func NewLoginJwtMiddlewareBuilder(cmd redis.Cmdable) *LoginJwtMiddlewareBuilder {
 	return &LoginJwtMiddlewareBuilder{
 		whiteList: []string{"/users/login", "/users/signup"},
+		cmd:       cmd,
 	}
 }
 
@@ -68,6 +73,18 @@ func (lm *LoginJwtMiddlewareBuilder) Build() gin.HandlerFunc {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
+
+		// 查看 ssid 是否在redis中
+		cnt, err := lm.cmd.Exists(ctx, fmt.Sprintf("users:sid:%s", userClaim.Ssid)).Result()
+		if err != nil || cnt > 0 {
+			// 要么 redis 出错，要么当前token已经退出登陆了
+
+			// 这里其实可以考虑降级的
+			// 如果 redis 出错了，不报错，直接继续执行，保证其他登陆用户不影响，毕竟退出登陆的用户在少数
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
 		// 刷新 token
 		// jwt 的 token 刷新即使生成了一个新的 token
 		// 每隔10秒刷新一次
