@@ -28,7 +28,6 @@ func InitWebService() *gin.Engine {
 
 		// 短信服务
 		code.NewSmsCodeService,
-
 		CreateLocalSMSService,
 
 		repository.NewCacheCodeRepository,
@@ -36,6 +35,8 @@ func InitWebService() *gin.Engine {
 
 		// user web
 		web.NewUserHandler,
+		web.NewOAuth2WechatHandler,
+		CreateOAuth2WechatService,
 
 		// 中间件
 		ioc.CreateMiddlewares,

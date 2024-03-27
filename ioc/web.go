@@ -3,6 +3,8 @@ package ioc
 import (
 	"time"
 
+	"github.com/wx-up/go-book/internal/web/jwt"
+
 	"github.com/redis/go-redis/v9"
 	"github.com/wx-up/go-book/internal/web/middleware"
 
@@ -22,7 +24,11 @@ func InitWeb(ms []gin.HandlerFunc,
 	return engine
 }
 
-func CreateMiddlewares(cmd redis.Cmdable) []gin.HandlerFunc {
+func CreateJwtHandler(cmd redis.Cmdable) jwt.Handler {
+	return jwt.NewRedisJwtHandler(cmd)
+}
+
+func CreateMiddlewares(jwtHandler jwt.Handler) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		// 跨域
 		cors.New(cors.Config{
@@ -37,7 +43,7 @@ func CreateMiddlewares(cmd redis.Cmdable) []gin.HandlerFunc {
 		}),
 
 		// 登陆
-		middleware.NewLoginJwtMiddlewareBuilder().
+		middleware.NewLoginJwtMiddlewareBuilder(jwtHandler).
 			IgnorePaths("/users/code/send").
 			IgnorePaths("/users/code/verify").
 			IgnorePaths("/oauth2/wechat/callback").

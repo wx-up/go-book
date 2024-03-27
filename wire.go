@@ -39,6 +39,8 @@ func InitWebService() *gin.Engine {
 		web.NewUserHandler,
 		// OAuth2
 		web.NewOAuth2WechatHandler,
+		// jwt handler
+		ioc.CreateJwtHandler,
 
 		// 中间件
 		ioc.CreateMiddlewares,

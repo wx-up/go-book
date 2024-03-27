@@ -123,7 +123,7 @@ func (h *OAuth2WechatHandler) Callback(ctx *gin.Context) {
 	}
 
 	// 设置 jwt
-	err = h.setJwtToken(ctx, u)
+	err = h.setLoginToken(ctx, u)
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: -1,
