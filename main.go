@@ -19,60 +19,6 @@ import (
 	_ "github.com/spf13/viper/remote"
 )
 
-func InitConfigByRemote() {
-	// etcd 代表 etcd2.x 以及之前的版本
-	// etcd3 代表 etcd3.x 以及之后的版本，一般都是用 etcd3
-	// 使用 path 来做隔离，类似命名空间的概念
-	err := viper.AddRemoteProvider("etcd3", "http://127.0.0.1:12379", "/go_book")
-	if err != nil {
-		panic(err)
-	}
-	viper.SetConfigType("yaml")
-	err = viper.ReadRemoteConfig()
-	if err != nil {
-		panic(err)
-	}
-	type C struct {
-		Dsn string
-	}
-	var c C
-	viper.UnmarshalKey("db.mysql", &c)
-	fmt.Println(c)
-	go func() {
-		for {
-			time.Sleep(time.Second * 5)
-			viper.WatchRemoteConfig()
-			viper.UnmarshalKey("db.mysql", &c)
-			fmt.Println(c)
-		}
-	}()
-	time.Sleep(time.Second * 120)
-}
-
-func initConfig() {
-	cFile := pflag.String("config", "config/config.yaml", "指定配置文件")
-	pflag.Parse() // 解析命令行参数
-	viper.SetConfigFile(*cFile)
-	if err := viper.ReadInConfig(); err != nil {
-		panic(err)
-	}
-	fmt.Println(viper.AllKeys())
-	type C struct {
-		DSN string
-	}
-	var c C
-	fmt.Println(viper.UnmarshalKey("db.mysql", &c))
-	fmt.Println(viper.Get("db.mysql"))
-	fmt.Println(c)
-	viper.WatchConfig()
-	viper.OnConfigChange(func(e fsnotify.Event) {
-		fmt.Println(viper.UnmarshalKey("db.mysql", &c))
-		fmt.Println(c)
-	})
-
-	time.Sleep(time.Second * 120)
-}
-
 func main() {
 	// InitConfigByRemote()
 	initConfig()
@@ -124,4 +70,57 @@ func main() {
 	}
 
 	log.Println("Server Shutdown Success")
+}
+
+// initConfig 读取配置文件
+func initConfig() {
+	cFile := pflag.String("config", "config/config.yaml", "指定配置文件")
+	pflag.Parse() // 解析命令行参数
+	viper.SetConfigFile(*cFile)
+	if err := viper.ReadInConfig(); err != nil {
+		panic(err)
+	}
+	fmt.Println(viper.AllKeys())
+	type C struct {
+		DSN string
+	}
+	var c C
+	fmt.Println(viper.UnmarshalKey("db.mysql", &c))
+	fmt.Println(viper.Get("db.mysql"))
+	fmt.Println(c)
+	viper.WatchConfig()
+	viper.OnConfigChange(func(e fsnotify.Event) {
+		fmt.Println(viper.UnmarshalKey("db.mysql", &c))
+		fmt.Println(c)
+	})
+}
+
+// InitConfigByRemote etcd 远程配置中心读取
+func InitConfigByRemote() {
+	// etcd 代表 etcd2.x 以及之前的版本
+	// etcd3 代表 etcd3.x 以及之后的版本，一般都是用 etcd3
+	// 使用 path 来做隔离，类似命名空间的概念
+	err := viper.AddRemoteProvider("etcd3", "http://127.0.0.1:12379", "/go_book")
+	if err != nil {
+		panic(err)
+	}
+	viper.SetConfigType("yaml")
+	err = viper.ReadRemoteConfig()
+	if err != nil {
+		panic(err)
+	}
+	type C struct {
+		Dsn string
+	}
+	var c C
+	viper.UnmarshalKey("db.mysql", &c)
+	fmt.Println(c)
+	go func() {
+		for {
+			time.Sleep(time.Second * 5)
+			viper.WatchRemoteConfig()
+			viper.UnmarshalKey("db.mysql", &c)
+			fmt.Println(c)
+		}
+	}()
 }

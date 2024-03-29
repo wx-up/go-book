@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-
 	"github.com/wx-up/go-book/internal/repository/dao/model"
 	"gorm.io/gorm"
 )
@@ -25,36 +24,37 @@ type UserDAO interface {
 }
 
 type GORMUserDAO struct {
-	db *gorm.DB
+	p DBProvider
 }
 
-func NewGORMUserDAO(db *gorm.DB) UserDAO {
-	return &GORMUserDAO{
-		db: db,
+func NewGORMUserDAO(p DBProvider) UserDAO {
+	dao := &GORMUserDAO{
+		p: p,
 	}
+	return dao
 }
 
 func (dao *GORMUserDAO) FindByWeChatOpenId(ctx context.Context, openId string) (obj model.User, err error) {
 	// SELECT * FROM `users` WHERE `wechat_open_id` = ? LIMIT 1
-	err = dao.db.WithContext(ctx).Where("wechat_open_id = ?", openId).First(&obj).Error
+	err = dao.p().WithContext(ctx).Where("wechat_open_id = ?", openId).First(&obj).Error
 	return
 }
 
 func (dao *GORMUserDAO) FindByEmail(ctx context.Context, email string) (obj model.User, err error) {
 	// SELECT * FROM `users` WHERE `email` = ? LIMIT 1
-	err = dao.db.WithContext(ctx).Where("email = ?", email).First(&obj).Error
+	err = dao.p().WithContext(ctx).Where("email = ?", email).First(&obj).Error
 	return
 }
 
 func (dao *GORMUserDAO) FindByPhone(ctx context.Context, phone string) (obj model.User, err error) {
 	// SELECT * FROM `users` WHERE `phone` = ? LIMIT 1
-	err = dao.db.WithContext(ctx).Where("phone = ?", phone).First(&obj).Error
+	err = dao.p().WithContext(ctx).Where("phone = ?", phone).First(&obj).Error
 	return
 }
 
 func (dao *GORMUserDAO) FindById(ctx context.Context, id int64) (obj model.User, err error) {
 	// SELECT * FROM `users` WHERE `id` = ? LIMIT 1
-	err = dao.db.WithContext(ctx).Where("id = ?", id).First(&obj).Error
+	err = dao.p().WithContext(ctx).Where("id = ?", id).First(&obj).Error
 	return
 }
 
@@ -62,7 +62,7 @@ func (dao *GORMUserDAO) Insert(ctx context.Context, obj model.User) (int64, erro
 	now := time.Now().UnixMilli()
 	obj.CreateTime = now
 	obj.UpdateTime = now
-	err := dao.db.WithContext(ctx).Create(&obj).Error
+	err := dao.p().WithContext(ctx).Create(&obj).Error
 	if mysqlErr, ok := err.(*mysql.MySQLError); ok {
 		if mysqlErr.Number == 1062 {
 			return 0, ErrUserDuplicate

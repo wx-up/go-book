@@ -10,11 +10,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/wx-up/go-book/internal/repository"
 	"github.com/wx-up/go-book/internal/repository/cache"
-	"github.com/wx-up/go-book/internal/repository/dao"
 	"github.com/wx-up/go-book/internal/service"
 	"github.com/wx-up/go-book/internal/service/code"
 	"github.com/wx-up/go-book/internal/web"
 	"github.com/wx-up/go-book/ioc"
+)
+
+import (
+	_ "github.com/spf13/viper/remote"
 )
 
 // Injectors from wire.go:
@@ -24,7 +27,7 @@ func InitWebService() *gin.Engine {
 	handler := ioc.CreateJwtHandler(cmdable)
 	v := ioc.CreateMiddlewares(handler)
 	db := ioc.CreateMysql()
-	userDAO := dao.NewGORMUserDAO(db)
+	userDAO := ioc.CreateUserDao(db)
 	userCache := cache.NewRedisUserCache(cmdable)
 	userRepository := repository.NewCacheUserRepository(userDAO, userCache)
 	userService := service.NewUserService(userRepository)

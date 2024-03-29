@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"sync/atomic"
 	"testing"
+	"unsafe"
 
 	"github.com/spf13/viper"
 
@@ -107,4 +109,25 @@ redis:
 	_ = viper.ReadConfig(bytes.NewReader([]byte(cfg)))
 
 	fmt.Println(viper.GetString("redis.addr"))
+}
+
+func Test2(t *testing.T) {
+	type a struct {
+		name string
+	}
+
+	type b struct {
+		a *a
+	}
+	v := &b{
+		a: &a{
+			name: "test",
+		},
+	}
+	newA := &a{
+		name: "haha",
+	}
+	p := (*unsafe.Pointer)(unsafe.Pointer(&v.a))
+	atomic.StorePointer(p, unsafe.Pointer(newA))
+	fmt.Println(v.a.name)
 }

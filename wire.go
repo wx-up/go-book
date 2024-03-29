@@ -7,7 +7,6 @@ import (
 	"github.com/google/wire"
 	"github.com/wx-up/go-book/internal/repository"
 	"github.com/wx-up/go-book/internal/repository/cache"
-	"github.com/wx-up/go-book/internal/repository/dao"
 	"github.com/wx-up/go-book/internal/service"
 	"github.com/wx-up/go-book/internal/service/code"
 	"github.com/wx-up/go-book/internal/web"
@@ -23,7 +22,7 @@ func InitWebService() *gin.Engine {
 		// 用户服务
 		service.NewUserService,
 		repository.NewCacheUserRepository,
-		dao.NewGORMUserDAO,
+		ioc.CreateUserDao,
 		cache.NewRedisUserCache,
 
 		// OAuth2 Wechat 服务

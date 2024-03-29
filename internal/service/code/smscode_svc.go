@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"math/rand"
 
+	"go.uber.org/atomic"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/spf13/viper"
+
 	"github.com/wx-up/go-book/internal/repository"
 
 	"github.com/wx-up/go-book/pkg/sms"
@@ -19,15 +24,20 @@ var (
 type SmsCodeService struct {
 	client sms.Service
 	repo   repository.CodeRepository
-	tplId  string
+	tplId  atomic.String
 }
 
 func NewSmsCodeService(client sms.Service, repo repository.CodeRepository) Service {
-	return &SmsCodeService{
+	svc := &SmsCodeService{
 		client: client,
 		repo:   repo,
-		tplId:  "",
 	}
+	svc.tplId.Store("123")
+	viper.OnConfigChange(func(in fsnotify.Event) {
+		// 配置信息发送变化
+		svc.tplId.Store(viper.GetString("sms.tpl_id"))
+	})
+	return svc
 }
 
 func (s *SmsCodeService) Send(ctx context.Context, biz string, phone string) error {
@@ -39,7 +49,7 @@ func (s *SmsCodeService) Send(ctx context.Context, biz string, phone string) err
 		return err
 	}
 	// 发送验证码
-	err = s.client.Send(ctx, s.tplId, []sms.NameArg{{Name: "code", Val: code}}, phone)
+	err = s.client.Send(ctx, s.tplId.Load(), []sms.NameArg{{Name: "code", Val: code}}, phone)
 	if err != nil {
 		// 这里不应该删除 redis 的 key
 		// 因为错误有可能是超时等问题，你不知道验证码是否真的发送
