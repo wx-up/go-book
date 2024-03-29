@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
 	"testing"
+
+	"github.com/spf13/viper"
 
 	"github.com/stretchr/testify/require"
 
@@ -66,4 +69,42 @@ func Test_Redis(t *testing.T) {
 	val, err := client.Eval(context.Background(), luaTest, []string{}).Bool()
 	fmt.Println(err == redis.Nil)
 	fmt.Println(val)
+}
+
+func Test_Viper(t *testing.T) {
+	// 读取的文件名叫做 dev ，不包括文件扩展名，比如 .go、.yaml 等
+	// 扩展名由 SetConfigType 指定
+	viper.SetConfigName("dev")
+	// 读取的文件类型是 yaml
+	viper.SetConfigType("yaml")
+	// 在当前目录的 config 目录下查找
+	// 从函数的命名中可以知道：使用 add 而不是 set 是指可以添加多个路径
+	viper.AddConfigPath("config")
+	if err := viper.ReadInConfig(); err != nil {
+		t.Fatal(err)
+	}
+
+	viper.SetConfigFile("config/dev.yaml")
+	if err := viper.ReadInConfig(); err != nil {
+		t.Fatal(err)
+	}
+
+	viper.GetInt64("db.port")
+}
+
+func Test_Viper2(t *testing.T) {
+	cfg := `
+db:
+  dsn: "test"
+
+redis:
+  addr: "localhost:6379"
+  password: ""
+  db: 0
+`
+	viper.SetConfigType("yaml")
+
+	_ = viper.ReadConfig(bytes.NewReader([]byte(cfg)))
+
+	fmt.Println(viper.GetString("redis.addr"))
 }

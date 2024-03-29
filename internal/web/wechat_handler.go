@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/lithammer/shortuuid/v4"
-
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/wx-up/go-book/internal/domain"
+	ijwt "github.com/wx-up/go-book/internal/web/jwt"
+
+	"github.com/lithammer/shortuuid/v4"
 
 	"github.com/wx-up/go-book/internal/service"
 
@@ -17,17 +19,18 @@ import (
 )
 
 type OAuth2WechatHandler struct {
-	svc     wechat.Service
-	userSvc service.UserService
-	jwtHandler
+	svc        wechat.Service
+	userSvc    service.UserService
+	jwtHandler ijwt.Handler
 }
 
 var _ handler = (*OAuth2WechatHandler)(nil)
 
-func NewOAuth2WechatHandler(svc wechat.Service, userSvc service.UserService) *OAuth2WechatHandler {
+func NewOAuth2WechatHandler(svc wechat.Service, userSvc service.UserService, jwtHandler ijwt.Handler) *OAuth2WechatHandler {
 	return &OAuth2WechatHandler{
-		svc:     svc,
-		userSvc: userSvc,
+		svc:        svc,
+		userSvc:    userSvc,
+		jwtHandler: jwtHandler,
 	}
 }
 
@@ -136,6 +139,18 @@ func (h *OAuth2WechatHandler) Callback(ctx *gin.Context) {
 		Code: 0,
 		Msg:  "登陆成功",
 	})
+}
+
+func (h *OAuth2WechatHandler) setLoginToken(ctx *gin.Context, u domain.User) error {
+	err := h.jwtHandler.SetAccessToken(ctx, u.Id)
+	if err != nil {
+		return err
+	}
+	err = h.jwtHandler.SetRefreshToken(ctx, u.Id)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (h *OAuth2WechatHandler) verifyState(ctx *gin.Context) error {

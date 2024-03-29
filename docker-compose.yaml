@@ -34,4 +34,11 @@ services:
       - backend
     restart: always
 
+  etcd:
+    image: "bitnami/etcd:latest"
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+    ports:
+      - "12379:2379"
+
 

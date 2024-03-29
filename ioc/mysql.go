@@ -1,18 +1,28 @@
 package ioc
 
 import (
+	"fmt"
 	"time"
+
+	"github.com/spf13/viper"
 
 	"github.com/wx-up/go-book/internal/repository/dao/model"
 
-	"github.com/wx-up/go-book/config"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 func CreateMysql() *gorm.DB {
+	type Config struct {
+		DSN string `yaml:"dsn"`
+	}
+	var c Config
+	err := viper.UnmarshalKey("db", &c)
+	if err != nil {
+		panic(fmt.Errorf("初始化数据库配置失败：%w", err))
+	}
 	db, err := gorm.Open(mysql.New(mysql.Config{
-		DSN: config.C.Mysql.DSN,
+		DSN: c.DSN,
 	}), &gorm.Config{})
 	if err != nil {
 		panic(err)

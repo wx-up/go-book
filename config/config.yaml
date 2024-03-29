@@ -1,0 +1,8 @@
+db:
+  mysql:
+    dsn: "root:root@tcp(localhost:13316)/go_book?charset=utf8mb4&parseTime=True&multiStatements=true&loc=Local"
+
+redis:
+  addr: "localhost:7379"
+  password: ""
+  db: 0
