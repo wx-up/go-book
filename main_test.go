@@ -8,7 +8,10 @@ import (
 	"math/rand"
 	"sync/atomic"
 	"testing"
+	"time"
 	"unsafe"
+
+	"go.uber.org/zap"
 
 	"github.com/spf13/viper"
 
@@ -64,13 +67,14 @@ return true
 
 func Test_Redis(t *testing.T) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     "localhost:7379",
 		Password: "",
 		DB:       0,
 	})
-	val, err := client.Eval(context.Background(), luaTest, []string{}).Bool()
-	fmt.Println(err == redis.Nil)
-	fmt.Println(val)
+	// val, err := client.Eval(context.Background(), luaTest, []string{}).Bool()
+	// fmt.Println(err == redis.Nil)
+	// fmt.Println(val)
+	fmt.Println(client.Exists(context.Background(), "test-test").Result())
 }
 
 func Test_Viper(t *testing.T) {
@@ -130,4 +134,33 @@ func Test2(t *testing.T) {
 	p := (*unsafe.Pointer)(unsafe.Pointer(&v.a))
 	atomic.StorePointer(p, unsafe.Pointer(newA))
 	fmt.Println(v.a.name)
+}
+
+func Test_Log(t *testing.T) {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic(err)
+	}
+	zap.ReplaceGlobals(logger)
+	zap.L().Debug("test")
+
+	// zap.L().Error(fmt.Sprintf("出错了 %s", uuid.New().String()), zap.Error(errors.New("数据库错误")))
+
+	zap.L().Info("这是一条日志", zap.String("name", "张三"), zap.Int("age", 20))
+}
+
+func TestInitConfigByRemote(t *testing.T) {
+	ch := make(chan string, 2)
+	ch <- "123"
+	ch <- "456"
+	fmt.Println("哈哈好")
+	close(ch)
+	for v := range ch {
+		fmt.Println(v)
+	}
+}
+
+func Test_Time_Sub(t *testing.T) {
+	ti, _ := time.ParseInLocation("2006-01-02 15:04:05", "2024-04-01 12:00:00", time.Local)
+	fmt.Println(time.Now().Sub(ti).String())
 }

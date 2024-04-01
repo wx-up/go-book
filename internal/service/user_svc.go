@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"go.uber.org/zap"
+
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/wx-up/go-book/internal/repository"
@@ -25,12 +27,14 @@ type UserService interface {
 }
 
 type userService struct {
-	repo repository.UserRepository
+	repo   repository.UserRepository
+	logger *zap.Logger
 }
 
-func NewUserService(repo repository.UserRepository) UserService {
+func NewUserService(repo repository.UserRepository, logger *zap.Logger) UserService {
 	return &userService{
-		repo: repo,
+		repo:   repo,
+		logger: logger,
 	}
 }
 

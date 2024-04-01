@@ -7,7 +7,6 @@ import (
 	"github.com/google/wire"
 	"github.com/wx-up/go-book/internal/repository"
 	"github.com/wx-up/go-book/internal/repository/cache"
-	"github.com/wx-up/go-book/internal/service"
 	"github.com/wx-up/go-book/internal/service/code"
 	"github.com/wx-up/go-book/internal/web"
 	"github.com/wx-up/go-book/ioc"
@@ -20,7 +19,7 @@ func InitWebService() *gin.Engine {
 		ioc.CreateMysql,
 
 		// 用户服务
-		service.NewUserService,
+		ioc.CreateUserService,
 		repository.NewCacheUserRepository,
 		ioc.CreateUserDao,
 		cache.NewRedisUserCache,

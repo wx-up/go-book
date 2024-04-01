@@ -3,6 +3,11 @@ package ioc
 import (
 	"os"
 
+	"github.com/wx-up/go-book/internal/repository"
+	"go.uber.org/zap"
+
+	"github.com/wx-up/go-book/internal/service"
+
 	"github.com/wx-up/go-book/internal/service/oauth2/wechat"
 )
 
@@ -19,4 +24,12 @@ func CreateOAuth2WechatService() wechat.Service {
 	}
 
 	return wechat.NewService(appId, appSecret)
+}
+
+func CreateUserService(repo repository.UserRepository) service.UserService {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic(err)
+	}
+	return service.NewUserService(repo, logger)
 }

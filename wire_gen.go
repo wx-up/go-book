@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/wx-up/go-book/internal/repository"
 	"github.com/wx-up/go-book/internal/repository/cache"
-	"github.com/wx-up/go-book/internal/service"
 	"github.com/wx-up/go-book/internal/service/code"
 	"github.com/wx-up/go-book/internal/web"
 	"github.com/wx-up/go-book/ioc"
@@ -30,11 +29,11 @@ func InitWebService() *gin.Engine {
 	userDAO := ioc.CreateUserDao(db)
 	userCache := cache.NewRedisUserCache(cmdable)
 	userRepository := repository.NewCacheUserRepository(userDAO, userCache)
-	userService := service.NewUserService(userRepository)
-	smsService := ioc.CreateSMSService()
+	userService := ioc.CreateUserService(userRepository)
+	service := ioc.CreateSMSService()
 	codeCache := cache.NewRedisCodeCache(cmdable)
 	codeRepository := repository.NewCacheCodeRepository(codeCache)
-	codeService := code.NewSmsCodeService(smsService, codeRepository)
+	codeService := code.NewSmsCodeService(service, codeRepository)
 	userHandler := web.NewUserHandler(userService, codeService, cmdable, handler)
 	wechatService := ioc.CreateOAuth2WechatService()
 	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService, handler)
