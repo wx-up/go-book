@@ -5,6 +5,8 @@ import (
 	"io"
 	"time"
 
+	"go.uber.org/atomic"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,26 +19,26 @@ type AccessLog struct {
 	Status   int    `json:"status"`
 }
 type Builder struct {
-	allowReqBody  bool
-	allowRespBody bool
+	allowReqBody  *atomic.Bool
+	allowRespBody *atomic.Bool
 	loggerFunc    func(ctx *gin.Context, al *AccessLog)
 }
 
 func NewBuilder(loggerFunc func(ctx *gin.Context, al *AccessLog)) *Builder {
 	return &Builder{
-		allowReqBody:  false,
-		allowRespBody: false,
+		allowReqBody:  atomic.NewBool(false),
+		allowRespBody: atomic.NewBool(false),
 		loggerFunc:    loggerFunc,
 	}
 }
 
-func (b *Builder) AllowReqBody() *Builder {
-	b.allowReqBody = true
+func (b *Builder) AllowReqBody(val bool) *Builder {
+	b.allowReqBody.Store(val)
 	return b
 }
 
-func (b *Builder) AllowRespBody() *Builder {
-	b.allowRespBody = true
+func (b *Builder) AllowRespBody(val bool) *Builder {
+	b.allowRespBody.Store(val)
 	return b
 }
 
@@ -55,7 +57,7 @@ func (b *Builder) Build() gin.HandlerFunc {
 		}
 
 		// 限制请求体的最大长度
-		if b.allowReqBody && ctx.Request.Body != nil {
+		if b.allowReqBody.Load() && ctx.Request.Body != nil {
 			body, _ := ctx.GetRawData()
 			reader := io.NopCloser(bytes.NewReader(body))
 			ctx.Request.Body = reader
@@ -65,7 +67,7 @@ func (b *Builder) Build() gin.HandlerFunc {
 			al.ReqBody = string(body)
 		}
 
-		if b.allowRespBody {
+		if b.allowRespBody.Load() {
 			ctx.Writer = &responseWriter{al, ctx.Writer}
 		}
 

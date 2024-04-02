@@ -3,6 +3,12 @@ package ioc
 import (
 	"time"
 
+	"github.com/fsnotify/fsnotify"
+	"github.com/spf13/viper"
+
+	"github.com/wx-up/go-book/pkg/ginx/middleware/logger"
+	"go.uber.org/zap"
+
 	"github.com/wx-up/go-book/internal/web/jwt"
 
 	"github.com/redis/go-redis/v9"
@@ -29,7 +35,19 @@ func CreateJwtHandler(cmd redis.Cmdable) jwt.Handler {
 }
 
 func CreateMiddlewares(jwtHandler jwt.Handler) []gin.HandlerFunc {
+	accessLoggerBuilder := logger.NewBuilder(func(ctx *gin.Context, al *logger.AccessLog) {
+		zap.L().Debug("HTTP请求", zap.Any("al", al))
+	})
+	// 这里监听配置变化
+	viper.OnConfigChange(func(in fsnotify.Event) {
+		allowReqBody := viper.GetBool("logger.allow_request_body")
+		allowRespBody := viper.GetBool("logger.allow_response_body")
+		accessLoggerBuilder.AllowRespBody(allowRespBody)
+		accessLoggerBuilder.AllowReqBody(allowReqBody)
+	})
 	return []gin.HandlerFunc{
+		// 请求体和响应打印
+		accessLoggerBuilder.Build(),
 		// 跨域
 		cors.New(cors.Config{
 			AllowMethods:     []string{"PUT", "PATCH", "POST"},

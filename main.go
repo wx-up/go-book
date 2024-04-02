@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/fsnotify/fsnotify"
 
 	"github.com/spf13/pflag"
@@ -19,9 +21,11 @@ import (
 	_ "github.com/spf13/viper/remote"
 )
 
+// 19:39
 func main() {
 	// InitConfigByRemote()
 	initConfig()
+	initLogger()
 
 	engine := InitWebService()
 
@@ -70,6 +74,14 @@ func main() {
 	}
 
 	log.Println("Server Shutdown Success")
+}
+
+func initLogger() {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic(err)
+	}
+	zap.ReplaceGlobals(logger)
 }
 
 // initConfig 读取配置文件
