@@ -27,6 +27,46 @@ func NewArticleHandler(svc service.ArticleService) *ArticleHandler {
 func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 	g := engine.Group("/articles")
 	g.POST("/save", h.Save)
+	g.POST("/publish", h.Publish)
+}
+
+type PublishArticleReq struct {
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+// Publish 发布
+func (h *ArticleHandler) Publish(ctx *gin.Context) {
+	var req PublishArticleReq
+	if err := ctx.ShouldBind(&req); err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: -1,
+			Msg:  "参数错误",
+		})
+		return
+	}
+	claim := ctx.Value("claims").(jwt.UserClaim)
+	id, err := h.svc.Publish(ctx, domain.Article{
+		Title:   req.Title,
+		Content: req.Content,
+		Author: domain.Author{
+			Id: claim.Uid,
+		},
+	})
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "服务器错误，请稍后再试",
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Code: 0,
+		Msg:  "发布成功",
+		Data: map[string]any{
+			"id": id,
+		},
+	})
 }
 
 // Save 新增或者编辑

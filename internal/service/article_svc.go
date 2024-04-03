@@ -10,12 +10,19 @@ import (
 
 var ErrArticleNotFound = repository.ErrArticleNotFound
 
+//go:generate mockgen -destination=./mocks/article_svc.mock.go -package=svcmocks -source=article_svc.go
 type ArticleService interface {
 	Save(ctx context.Context, article domain.Article) (int64, error)
+	Publish(ctx context.Context, article domain.Article) (int64, error)
 }
 
 type articleService struct {
 	repo repository.ArticleRepository
+}
+
+func (a *articleService) Publish(ctx context.Context, article domain.Article) (int64, error) {
+	// TODO implement me
+	panic("implement me")
 }
 
 func NewArticleService(repo repository.ArticleRepository) ArticleService {

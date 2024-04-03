@@ -58,7 +58,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 			defer ctrl.Finish()
 			engine := gin.Default()
 			mockUserService, mockCodeService := tt.mock(ctrl)
-			userHandler := NewUserHandler(mockUserService, mockCodeService)
+			userHandler := NewUserHandler(mockUserService, mockCodeService, nil, nil)
 			userHandler.RegisterRoutes(engine)
 
 			req, err := http.NewRequest(http.MethodPost, "/users/signup", bytes.NewBuffer(tt.reqBody()))
