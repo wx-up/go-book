@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/wx-up/go-book/internal/integration/startup"
 
 	"github.com/wx-up/go-book/internal/web"
@@ -20,7 +22,7 @@ import (
 )
 
 func TestUserHandler_SendCode(t *testing.T) {
-	server := startup.InitWebService()
+	server := gin.Default()
 	redisClient := startup.InitTestRedis()
 	testCases := []struct {
 		name string

@@ -22,11 +22,13 @@ import (
 func InitWeb(ms []gin.HandlerFunc,
 	uh *web.UserHandler,
 	wh *web.OAuth2WechatHandler,
+	ah *web.ArticleHandler,
 ) *gin.Engine {
 	engine := gin.Default()
 	engine.Use(ms...)
 	uh.RegisterRoutes(engine)
 	wh.RegisterRoutes(engine)
+	ah.RegisterRoutes(engine)
 	return engine
 }
 

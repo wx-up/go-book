@@ -37,6 +37,8 @@ func InitTestMysql() *gorm.DB {
 			log.Println("等待连接 MySQL", err)
 		}
 
+		// model.InitTables(db)
+
 		// 开启 debug 模式
 		db.Debug()
 

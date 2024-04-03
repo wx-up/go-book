@@ -10,10 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/wx-up/go-book/internal/repository"
 	"github.com/wx-up/go-book/internal/repository/cache"
-	"github.com/wx-up/go-book/internal/repository/dao"
 	"github.com/wx-up/go-book/internal/service"
 	"github.com/wx-up/go-book/internal/service/code"
 	"github.com/wx-up/go-book/internal/web"
+	"github.com/wx-up/go-book/internal/web/jwt"
 	"github.com/wx-up/go-book/ioc"
 )
 
@@ -21,19 +21,34 @@ import (
 
 func InitWebService() *gin.Engine {
 	cmdable := InitTestRedis()
-	v := ioc.CreateMiddlewares(cmdable)
+	redisJwtHandler := jwt.NewRedisJwtHandler(cmdable)
+	v := ioc.CreateMiddlewares(redisJwtHandler)
 	db := InitTestMysql()
-	userDAO := dao.NewGORMUserDAO(db)
+	userDAO := CreateUserDAO(db)
 	userCache := cache.NewRedisUserCache(cmdable)
 	userRepository := repository.NewCacheUserRepository(userDAO, userCache)
-	userService := service.NewUserService(userRepository)
+	logger := CreateLogger()
+	userService := service.NewUserService(userRepository, logger)
 	smsService := CreateLocalSMSService()
 	codeCache := cache.NewRedisCodeCache(cmdable)
 	codeRepository := repository.NewCacheCodeRepository(codeCache)
 	codeService := code.NewSmsCodeService(smsService, codeRepository)
-	userHandler := web.NewUserHandler(userService, codeService, cmdable)
+	userHandler := web.NewUserHandler(userService, codeService, cmdable, redisJwtHandler)
 	wechatService := CreateOAuth2WechatService()
-	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService)
-	engine := ioc.InitWeb(v, userHandler, oAuth2WechatHandler)
+	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService, redisJwtHandler)
+	articleDAO := CreateArticleDAO(db)
+	cacheArticleRepository := repository.NewCacheArticleRepository(articleDAO)
+	articleService := service.NewArticleService(cacheArticleRepository)
+	articleHandler := web.NewArticleHandler(articleService)
+	engine := ioc.InitWeb(v, userHandler, oAuth2WechatHandler, articleHandler)
 	return engine
+}
+
+func CreateArticleHandler() *web.ArticleHandler {
+	db := InitTestMysql()
+	articleDAO := CreateArticleDAO(db)
+	cacheArticleRepository := repository.NewCacheArticleRepository(articleDAO)
+	articleService := service.NewArticleService(cacheArticleRepository)
+	articleHandler := web.NewArticleHandler(articleService)
+	return articleHandler
 }

@@ -33,6 +33,7 @@ func NewRedisJwtHandler(cmd redis.Cmdable) *RedisJwtHandler {
 		refreshTokenExpire: time.Hour * 24 * 7,
 		accessTokenKey:     AccessTokenKey,
 		refreshTokenKey:    RefreshTokenKey,
+		cmd:                cmd,
 	}
 }
 

@@ -5,11 +5,6 @@ package startup
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
-	"github.com/wx-up/go-book/internal/repository"
-	"github.com/wx-up/go-book/internal/repository/cache"
-	"github.com/wx-up/go-book/internal/repository/dao"
-	"github.com/wx-up/go-book/internal/service"
-	"github.com/wx-up/go-book/internal/service/code"
 	"github.com/wx-up/go-book/internal/web"
 	"github.com/wx-up/go-book/ioc"
 )
@@ -17,26 +12,12 @@ import (
 func InitWebService() *gin.Engine {
 	wire.Build(
 		// 基础组件
-		InitTestRedis,
-		InitTestMysql,
+		ThirdPartySet,
 
-		// 用户服务
-		service.NewUserService,
-		repository.NewCacheUserRepository,
-		dao.NewGORMUserDAO,
-		cache.NewRedisUserCache,
-
-		// 短信服务
-		code.NewSmsCodeService,
-		CreateLocalSMSService,
-
-		repository.NewCacheCodeRepository,
-		cache.NewRedisCodeCache,
-
-		// user web
-		web.NewUserHandler,
-		web.NewOAuth2WechatHandler,
-		CreateOAuth2WechatService,
+		UserHandlerSet,
+		ArticleHandlerSet,
+		WechatHandlerSet,
+		JWTHandlerSet,
 
 		// 中间件
 		ioc.CreateMiddlewares,
@@ -45,4 +26,12 @@ func InitWebService() *gin.Engine {
 	)
 
 	return new(gin.Engine)
+}
+
+func CreateArticleHandler() *web.ArticleHandler {
+	wire.Build(
+		ThirdPartySet,
+		ArticleHandlerSet,
+	)
+	return new(web.ArticleHandler)
 }
