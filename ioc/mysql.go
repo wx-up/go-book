@@ -6,6 +6,8 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/wx-up/go-book/internal/repository/dao"
+
 	"go.uber.org/zap"
 
 	"go.uber.org/zap/zapcore"
@@ -13,8 +15,6 @@ import (
 	glogger "gorm.io/gorm/logger"
 
 	"github.com/fsnotify/fsnotify"
-
-	"github.com/wx-up/go-book/internal/repository/dao"
 
 	"github.com/spf13/viper"
 
@@ -64,7 +64,7 @@ func (f gormLoggerFunc) Printf(m string, args ...interface{}) {
 	f(fmt.Sprintf(m, args...))
 }
 
-func CreateUserDao(db *gorm.DB) dao.UserDAO {
+func CreateDBProvider(db *gorm.DB) dao.DBProvider {
 	viper.OnConfigChange(func(in fsnotify.Event) {
 		type Config struct {
 			DSN string `yaml:"dsn"`
@@ -83,7 +83,7 @@ func CreateUserDao(db *gorm.DB) dao.UserDAO {
 		// 原子操作
 		atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&db)), unsafe.Pointer(newDB))
 	})
-	return dao.NewGORMUserDAO(func() *gorm.DB {
+	return func() *gorm.DB {
 		return db
-	})
+	}
 }

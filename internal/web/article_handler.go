@@ -28,11 +28,16 @@ func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 	g := engine.Group("/articles")
 	g.POST("/save", h.Save)
 	g.POST("/publish", h.Publish)
+	g.POST("/withdraw", h.Withdraw)
 }
 
 type PublishArticleReq struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
+}
+
+// Withdraw 撤回，仅自己可见
+func (h *ArticleHandler) Withdraw(ctx *gin.Context) {
 }
 
 // Publish 发布

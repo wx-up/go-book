@@ -16,4 +16,18 @@ type Article struct {
 	AuthorId   int64 `gorm:"index:idx_author_id_create_time;"`
 	CreateTime int64 `gorm:"index:idx_author_id_create_time;"`
 	UpdateTime int64
+
+	// 有些人会考虑到经常使用状态来查询，比如 WHERE status = xxx AND xxx
+	// 所以会在 status 上和别的列一起创建一个联合索引
+	Status uint8
+}
+
+// PublishArticle 线上库的文章表
+// 正常来说线上库文章表的字段会更多点，比如点赞数、踩等等
+type PublishArticle struct {
+	Article
+}
+
+func (*PublishArticle) TableName() string {
+	return "published_articles"
 }

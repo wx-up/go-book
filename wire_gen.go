@@ -8,8 +8,11 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/google/wire"
 	"github.com/wx-up/go-book/internal/repository"
 	"github.com/wx-up/go-book/internal/repository/cache"
+	"github.com/wx-up/go-book/internal/repository/dao"
+	"github.com/wx-up/go-book/internal/service"
 	"github.com/wx-up/go-book/internal/service/code"
 	"github.com/wx-up/go-book/internal/web"
 	"github.com/wx-up/go-book/ioc"
@@ -26,17 +29,37 @@ func InitWebService() *gin.Engine {
 	handler := ioc.CreateJwtHandler(cmdable)
 	v := ioc.CreateMiddlewares(handler)
 	db := ioc.CreateMysql()
-	userDAO := ioc.CreateUserDao(db)
+	dbProvider := ioc.CreateDBProvider(db)
+	userDAO := dao.NewGORMUserDAO(dbProvider)
 	userCache := cache.NewRedisUserCache(cmdable)
 	userRepository := repository.NewCacheUserRepository(userDAO, userCache)
-	userService := ioc.CreateUserService(userRepository)
-	service := ioc.CreateSMSService()
+	logger := ioc.CreateLogger()
+	userService := service.NewUserService(userRepository, logger)
+	smsService := ioc.CreateSMSService()
 	codeCache := cache.NewRedisCodeCache(cmdable)
 	codeRepository := repository.NewCacheCodeRepository(codeCache)
-	codeService := code.NewSmsCodeService(service, codeRepository)
+	codeService := code.NewSmsCodeService(smsService, codeRepository)
 	userHandler := web.NewUserHandler(userService, codeService, cmdable, handler)
 	wechatService := ioc.CreateOAuth2WechatService()
 	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService, handler)
-	engine := ioc.InitWeb(v, userHandler, oAuth2WechatHandler)
+	gormArticleDAO := dao.NewGORMArticleDAO(dbProvider)
+	cacheArticleRepository := repository.NewCacheArticleRepository(gormArticleDAO)
+	articleService := service.NewArticleService(cacheArticleRepository)
+	articleHandler := web.NewArticleHandler(articleService)
+	engine := ioc.InitWeb(v, userHandler, oAuth2WechatHandler, articleHandler)
 	return engine
 }
+
+// wire.go:
+
+var thirdSet = wire.NewSet(ioc.CreateRedis, ioc.CreateMysql, ioc.CreateLogger, ioc.CreateJwtHandler, ioc.CreateDBProvider)
+
+var userSvcSet = wire.NewSet(service.NewUserService, repository.NewCacheUserRepository, dao.NewGORMUserDAO, cache.NewRedisUserCache)
+
+var codeSvcSet = wire.NewSet(code.NewSmsCodeService, ioc.CreateSMSService, repository.NewCacheCodeRepository, cache.NewRedisCodeCache)
+
+var userHandlerSet = wire.NewSet(web.NewUserHandler)
+
+var wechatHandlerSet = wire.NewSet(web.NewOAuth2WechatHandler, ioc.CreateOAuth2WechatService)
+
+var articleHandlerSet = wire.NewSet(web.NewArticleHandler, service.NewArticleService, wire.Bind(new(repository.ArticleRepository), new(*repository.CacheArticleRepository)), repository.NewCacheArticleRepository, wire.Bind(new(dao.ArticleDAO), new(*dao.GORMArticleDAO)), dao.NewGORMArticleDAO)

@@ -164,3 +164,12 @@ func Test_Time_Sub(t *testing.T) {
 	ti, _ := time.ParseInLocation("2006-01-02 15:04:05", "2024-04-01 12:00:00", time.Local)
 	fmt.Println(time.Now().Sub(ti).String())
 }
+
+func Test_JsonMarshal(t *testing.T) {
+	type Dog struct {
+		Name string
+	}
+	var d *Dog
+	_ = json.Unmarshal([]byte(`{"name":"wx"}`), &d)
+	fmt.Println(d)
+}
