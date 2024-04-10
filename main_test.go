@@ -6,10 +6,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
 	"unsafe"
+
+	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/stretchr/testify/assert"
+
+	"go.mongodb.org/mongo-driver/event"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"go.uber.org/zap"
 
@@ -172,4 +182,109 @@ func Test_JsonMarshal(t *testing.T) {
 	var d *Dog
 	_ = json.Unmarshal([]byte(`{"name":"wx"}`), &d)
 	fmt.Println(d)
+}
+
+func Test_MongoDB(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	// monitor 设置监控，用于调试
+	monitor := &event.CommandMonitor{
+		// 每个命令执行前调用
+		Started: func(ctx context.Context, startedEvent *event.CommandStartedEvent) {
+			fmt.Println(startedEvent.Command)
+		},
+		// 执行成功
+		Succeeded: func(ctx context.Context, succeededEvent *event.CommandSucceededEvent) {
+		},
+		// 执行失败
+		Failed: func(ctx context.Context, failedEvent *event.CommandFailedEvent) {
+		},
+	}
+	opts := options.Client().ApplyURI("mongodb://root:root@localhost:27017").SetMonitor(monitor)
+	client, err := mongo.Connect(ctx, opts)
+	if err != nil {
+		panic(err)
+	}
+
+	// 不用预先创建数据库和集合，直接插入数据即可
+	col := client.Database("go_book").Collection("articles")
+
+	// 默认文档的字段是结构体字段的小写，AuthorID --> authorid
+	// 可以使用 bson 这个标签来自定义字段名
+	res, err := col.InsertOne(ctx, Article{
+		Title:   "我是标题",
+		Content: "我是内容",
+	})
+	assert.NoError(t, err)
+
+	// mongoDB是没有自增主键的，这个是文档ID，mongoDB会为每个文档生成一个 _id 字段
+	fmt.Println(res.InsertedID)
+
+	// 使用结构体来构建查询条件，需要注意零值问题
+	// 可以使用 `bson:"author_id,omitempty"` omitempty 标签来忽略零值
+	findRes := col.FindOne(ctx, Article{Title: "我是标题"})
+	fmt.Println(findRes.Raw())
+
+	// 是否有找到
+	if findRes.Err() == mongo.ErrNoDocuments {
+		fmt.Println("没有找到")
+	}
+
+	// 使用 bson 来构建查询条件
+	filter := bson.D{{"title", "我是标题"}}
+	findRes = col.FindOne(ctx, filter)
+	fmt.Println(findRes.Raw())
+	var art Article
+	assert.NoError(t, findRes.Decode(&art))
+	fmt.Println(art)
+
+	// 更新数据
+	// 构建 filter （ 更新条件 ）
+	// 构建 update （ 更新内容 ）
+	// 同查询，如果使用结构体的话，需要注意零值问题
+	filter = bson.D{{Key: "title", Value: "我是标题"}}
+	// $set 表示操作符，表示更新内容（ mongodb 的规范 ）
+	sets := bson.D{{Key: "$set", Value: bson.E{Key: "author_id", Value: 999}}}
+	updateRes, err := col.UpdateMany(ctx, filter, sets)
+	assert.NoError(t, err)
+	fmt.Println(updateRes.ModifiedCount)
+	// 使用结构体更新
+	updateRes, err = col.UpdateMany(ctx, filter, bson.M{"$set": Article{Title: "哈哈哈哈哈"}})
+	assert.NoError(t, err)
+	fmt.Println(updateRes.ModifiedCount)
+
+	// 删除数据
+	// delRes, err := col.DeleteMany(ctx, bson.M{"title": "哈哈哈哈哈"})
+	// assert.NoError(t, err)
+	// fmt.Println(delRes.DeletedCount)
+
+	// or 查询
+	findAllRes, err := col.Find(ctx, bson.M{"$or": bson.A{bson.M{"title": "哈哈哈哈哈"}, bson.M{"value": 888}}})
+	assert.NoError(t, err)
+	arts := make([]Article, 0, 2)
+	err = findAllRes.All(ctx, &arts)
+	assert.NoError(t, err)
+	println(len(arts))
+
+	// 创建索引
+	indexRes, err := col.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: "title", Value: 2}, {Key: "value", Value: 2}},
+		Options: options.Index(),
+		// Options: options.Index().SetUnique(true),
+	})
+	assert.NoError(t, err)
+	fmt.Println(indexRes)
+}
+
+type Article struct {
+	Title    string
+	Content  string
+	AuthorId int64 `bson:"author_id,omitempty"`
+}
+
+func Test_Number(t *testing.T) {
+	fmt.Println(time.Now().UnixMilli())
+	fmt.Println(int64(0b0000000000000000000000011111111111111111111111111111111111111111))
+	n := int64(-1)
+	fmt.Println(strconv.FormatInt(n, 2))
 }
