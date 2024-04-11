@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/wx-up/go-book/pkg/ginx"
+
 	"github.com/wx-up/go-book/internal/web/jwt"
 
 	"github.com/redis/go-redis/v9"
@@ -60,7 +62,7 @@ func (h *UserHandler) RegisterRoutes(engine *gin.Engine) {
 	ug.POST("/profile", h.Profile)
 
 	// 验证码发送
-	ug.POST("/code/send", h.SendCode)
+	ug.POST("/code/send", ginx.WrapHandle[SendCodeReq](h.SendCode))
 	// 验证码验证+登陆
 	ug.POST("/code/verify", h.VerifyCode)
 
@@ -192,30 +194,25 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 func (h *UserHandler) Profile(ctx *gin.Context) {
 }
 
-func (h *UserHandler) SendCode(ctx *gin.Context) {
-	type Req struct {
-		Phone string `json:"phone"`
-	}
-	var req Req
-	if err := ctx.Bind(&req); err != nil {
-		return
-	}
+type SendCodeReq struct {
+	Phone string `json:"phone"`
+}
 
+func (h *UserHandler) SendCode(ctx *gin.Context, req SendCodeReq) (Result, error) {
 	// 需要正则表达式强验证
 	if len(req.Phone) != 11 {
-		ctx.JSON(http.StatusOK, Result{Msg: "手机号格式错误", Code: 4})
-		return
+		return Result{Msg: "手机号格式错误", Code: 4}, nil
 	}
 
 	// 发送验证码
 	err := h.codeSvc.Send(ctx, biz, req.Phone)
 	switch err {
 	case nil:
-		ctx.JSON(http.StatusOK, Result{Msg: "验证码发送成功"})
+		return Result{Msg: "验证码发送成功"}, nil
 	case code.ErrCodeSendTooMany:
-		ctx.JSON(http.StatusOK, Result{Msg: "验证码发送过于频繁，请稍后再试", Code: 2})
+		return Result{Msg: "验证码发送过于频繁，请稍后再试", Code: 2}, nil
 	default:
-		ctx.JSON(http.StatusOK, Result{Msg: "系统错误", Code: 5})
+		return Result{Msg: "系统错误", Code: 5}, fmt.Errorf("发送短信错误：%w", err)
 	}
 }
 

@@ -1,7 +1,10 @@
 package web
 
 import (
+	"fmt"
 	"net/http"
+
+	"github.com/wx-up/go-book/pkg/ginx"
 
 	"github.com/wx-up/go-book/internal/web/jwt"
 
@@ -27,7 +30,7 @@ func NewArticleHandler(svc service.ArticleService) *ArticleHandler {
 func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 	g := engine.Group("/articles")
 	g.POST("/save", h.Save)
-	g.POST("/publish", h.Publish)
+	g.POST("/publish", ginx.WrapHandleWithClaim[PublishArticleReq, jwt.UserClaim]("claims", h.Publish))
 	g.POST("/withdraw", h.Withdraw)
 }
 
@@ -41,16 +44,7 @@ func (h *ArticleHandler) Withdraw(ctx *gin.Context) {
 }
 
 // Publish 发布
-func (h *ArticleHandler) Publish(ctx *gin.Context) {
-	var req PublishArticleReq
-	if err := ctx.ShouldBind(&req); err != nil {
-		ctx.JSON(http.StatusOK, Result{
-			Code: -1,
-			Msg:  "参数错误",
-		})
-		return
-	}
-	claim := ctx.Value("claims").(jwt.UserClaim)
+func (h *ArticleHandler) Publish(ctx *gin.Context, req PublishArticleReq, claim jwt.UserClaim) (Result, error) {
 	id, err := h.svc.Publish(ctx, domain.Article{
 		Title:   req.Title,
 		Content: req.Content,
@@ -59,19 +53,19 @@ func (h *ArticleHandler) Publish(ctx *gin.Context) {
 		},
 	})
 	if err != nil {
-		ctx.JSON(http.StatusOK, Result{
+		// 包装一下错误，日志统一去 wrap 中打印
+		return Result{
 			Code: 5,
 			Msg:  "服务器错误，请稍后再试",
-		})
-		return
+		}, fmt.Errorf("发布文章错误：%w", err)
 	}
-	ctx.JSON(http.StatusOK, Result{
+	return Result{
 		Code: 0,
 		Msg:  "发布成功",
 		Data: map[string]any{
 			"id": id,
 		},
-	})
+	}, nil
 }
 
 // Save 新增或者编辑
