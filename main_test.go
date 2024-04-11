@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/rand"
 	"strconv"
 	"sync/atomic"
@@ -268,12 +269,18 @@ func Test_MongoDB(t *testing.T) {
 
 	// 创建索引
 	indexRes, err := col.Indexes().CreateOne(ctx, mongo.IndexModel{
-		Keys:    bson.D{{Key: "title", Value: 2}, {Key: "value", Value: 2}},
+		Keys:    bson.D{{Key: "title", Value: 1}, {Key: "value", Value: -1}},
 		Options: options.Index(),
 		// Options: options.Index().SetUnique(true),
 	})
 	assert.NoError(t, err)
 	fmt.Println(indexRes)
+
+	// upsert
+	filter = bson.D{{"species", "Ledebouria socialis"}, {"plant_id", 3}}
+	update := bson.D{{"$set", bson.D{{"species", "Ledebouria socialis"}, {"plant_id", 3}, {"height", 8.3}}}}
+	upsertResult, err := col.UpdateOne(context.TODO(), filter, update, options.Update().SetUpsert(true))
+	fmt.Println(upsertResult, err)
 }
 
 type Article struct {
@@ -287,4 +294,6 @@ func Test_Number(t *testing.T) {
 	fmt.Println(int64(0b0000000000000000000000011111111111111111111111111111111111111111))
 	n := int64(-1)
 	fmt.Println(strconv.FormatInt(n, 2))
+
+	fmt.Println(math.Pow(2, 12))
 }

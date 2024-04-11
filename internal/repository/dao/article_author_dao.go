@@ -29,7 +29,7 @@ type GORMArticleDAO struct {
 func (a *GORMArticleDAO) SyncStatus(ctx context.Context, uid int64, id int64, status uint8) error {
 	now := time.Now().UnixMilli()
 	return a.p().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		res := tx.Model(&model.Article{}).Where("id = ? and author_id = ?", uid, id).Updates(map[string]any{
+		res := tx.Model(&model.Article{}).Where("id = ? and author_id = ?", id, uid).Updates(map[string]any{
 			"status":      status,
 			"update_time": now,
 		})
@@ -77,6 +77,7 @@ func (a *GORMArticleDAO) Sync(ctx context.Context, article model.Article) (int64
 			return err
 		}
 
+		article.Id = id
 		// 同步给线上库
 		id, err = NewGORMReaderArticleDAO(func() *gorm.DB {
 			return tx

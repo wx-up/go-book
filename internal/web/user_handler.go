@@ -72,6 +72,7 @@ func (h *UserHandler) RegisterRoutes(engine *gin.Engine) {
 }
 
 func (h *UserHandler) Logout(ctx *gin.Context) {
+	ctx.RemoteIP()
 	err := h.jwtHandler.ClearToken(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{Msg: "系统错误", Code: -1})
