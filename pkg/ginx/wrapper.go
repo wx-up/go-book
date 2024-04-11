@@ -63,6 +63,19 @@ func WrapHandleWithClaim[Req any, Claim jwt.Claims](
 	}
 }
 
+func WrapHandleV2[Req any](
+	f func(ctx *gin.Context, req Req) (Result, error),
+	before func(),
+	after func(),
+) gin.HandlerFunc {
+	return func(context *gin.Context) {
+		var req Req
+		before()
+		_, _ = f(context, req)
+		after()
+	}
+}
+
 func WrapHandle[Req any](f func(ctx *gin.Context, req Req) (Result, error)) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var req Req
