@@ -3,6 +3,10 @@ package web
 import (
 	"fmt"
 	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/wx-up/go-book/pkg/slice"
 
 	"github.com/wx-up/go-book/pkg/ginx"
 
@@ -30,13 +34,103 @@ func NewArticleHandler(svc service.ArticleService) *ArticleHandler {
 func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 	g := engine.Group("/articles")
 	g.POST("/save", h.Save)
-	g.POST("/publish", ginx.WrapHandleWithClaim[PublishArticleReq, jwt.UserClaim]("claims", h.Publish))
+	g.POST("/publish", ginx.WrapHandleWithReqAndClaim[PublishArticleReq, jwt.UserClaim]("claims", h.Publish))
 	g.POST("/withdraw", h.Withdraw)
+	g.GET("/", ginx.WrapHandleWithReqAndClaim[ArticleListReq, jwt.UserClaim]("claims", h.List))
+	g.GET("/detail/:id", ginx.WrapHandleWithClaim[jwt.UserClaim]("claims", h.Detail))
+
+	// 线上库，也就是用户端访问
+	gp := g.Group("/pub")
+	gp.GET("/:id", ginx.WrapHandleWithClaim[jwt.UserClaim]("claims", h.PublishedDetail))
+}
+
+func (h *ArticleHandler) PublishedDetail(ctx *gin.Context, claims jwt.UserClaim) (Result, error) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return Result{
+			Code: -1,
+			Msg:  "参数错误",
+		}, err
+	}
+	_ = id
+	return Result{}, nil
 }
 
 type PublishArticleReq struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
+}
+
+func (h *ArticleHandler) Detail(ctx *gin.Context, claim jwt.UserClaim) (Result, error) {
+	// 路由参数只能通过如下的方式获取和校验，无法通过 wrap 来优化
+	// 可以和前端约定，全部用 post 来请求，那么所有接口都可以使用 wrap 优化
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return Result{
+			Code: -1,
+			Msg:  "参数错误",
+		}, err
+	}
+	obj, err := h.svc.Detail(ctx, id)
+	if err != nil {
+		return Result{
+			Code: 5,
+			Msg:  "服务器错误",
+		}, err
+	}
+	if obj.Author.Id != claim.Uid {
+		// 非法访问文章，这时候要上报这种非法用户
+		return Result{
+			Code: 4,
+			// 不需要告诉前端发生了什么
+			Msg: "输入有误",
+		}, fmt.Errorf("非法访问文章，用户ID：%d，文章作者ID：%d", claim.Uid, obj.Author.Id)
+	}
+	return Result{
+		Code: 0,
+		Msg:  "获取成功",
+		Data: ArticleVO{
+			Id:       obj.Id,
+			Title:    obj.Title,
+			Abstract: obj.Abstract(),
+			Content:  obj.Content,
+			// AuthorId:   val.Author.Id,
+			// AuthorName: "",
+			CreateTime: obj.CreateTime.Format(time.DateTime),
+			UpdateTime: obj.CreateTime.Format(time.DateTime),
+			Status:     obj.Status.ToUint8(),
+		},
+	}, nil
+}
+
+// List 作者文章列表
+func (h *ArticleHandler) List(ctx *gin.Context, req ArticleListReq, claims jwt.UserClaim) (Result, error) {
+	objs, err := h.svc.List(ctx, claims.Uid, req.Page, req.Size)
+	if err != nil {
+		return Result{
+			Code: 5,
+			Msg:  "服务器错误",
+		}, fmt.Errorf("获取文章列表错误：%w", err)
+	}
+	return Result{
+		Code: 0,
+		Msg:  "获取成功",
+		Data: slice.Map[domain.Article, ArticleVO](objs, func(idx int, val domain.Article) ArticleVO {
+			return ArticleVO{
+				Id:       val.Id,
+				Title:    val.Title,
+				Abstract: val.Abstract(),
+				// Content:    val.Content,
+				// AuthorId:   val.Author.Id,
+				// AuthorName: "",
+				CreateTime: val.CreateTime.Format(time.DateTime),
+				UpdateTime: val.CreateTime.Format(time.DateTime),
+				Status:     val.Status.ToUint8(),
+			}
+		}),
+	}, nil
 }
 
 // Withdraw 撤回，仅自己可见

@@ -20,10 +20,33 @@ type ArticleDAO interface {
 	Sync(ctx context.Context, article model.Article) (int64, error)
 	Transaction(ctx context.Context, f func(dao ArticleDAO, readerDao ReaderArticleDAO) error) error
 	SyncStatus(ctx context.Context, uid int64, id int64, status uint8) error
+
+	// GetByAuthorId 根据作者id获取文章列表
+	GetByAuthorId(ctx context.Context, authorId int64, page, size int64) ([]model.Article, error)
+
+	// GetById 获取制作库的文章详情
+	GetById(ctx context.Context, id int64) (model.Article, error)
 }
 
 type GORMArticleDAO struct {
 	p DBProvider
+}
+
+func (a *GORMArticleDAO) GetById(ctx context.Context, id int64) (model.Article, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (a *GORMArticleDAO) GetByAuthorId(ctx context.Context, authorId int64, page, size int64) ([]model.Article, error) {
+	// SELECT * FROM article WHERE author_id = ? ORDER BY update_time DESC LIMIT ?,?
+	arts := make([]model.Article, 0, size)
+	err := a.p().WithContext(ctx).Model(&model.Article{}).
+		Where("author_id = ? ", authorId).
+		Offset(int((page - 1) * size)).
+		Limit(int(size)).
+		Order("update_time desc").
+		Find(&arts).Error
+	return arts, err
 }
 
 func (a *GORMArticleDAO) SyncStatus(ctx context.Context, uid int64, id int64, status uint8) error {

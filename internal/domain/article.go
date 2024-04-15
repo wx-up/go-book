@@ -1,11 +1,33 @@
 package domain
 
+import "time"
+
 type Article struct {
-	Id      int64
-	Title   string
-	Content string
-	Author  Author
-	Status  ArticleStatus
+	Id         int64
+	Title      string
+	Content    string
+	Author     Author
+	Status     ArticleStatus
+	CreateTime time.Time
+	UpdateTime time.Time
+}
+type Author struct {
+	Id   int64
+	Name string
+}
+
+// Abstract 文章摘要
+// 如果文章内容是保存到 OSS 的话，需要在创建文章的时候生成一份摘要存储到数据库中
+// 然后从数据库中直接读取摘要
+func (a Article) Abstract() string {
+	// 摘要
+	// 方案一：截取文章内容的前几个字符
+	// 方案二：使用AI来生成
+	cs := []rune(a.Content)
+	if len(cs) > 100 {
+		return string(cs[:100])
+	}
+	return a.Content
 }
 
 // ArticleStatus 定义衍生类型
@@ -51,9 +73,4 @@ type ArticleStatusV1 struct {
 var ArticleStatusV1Unknown = ArticleStatusV1{
 	Val:  0,
 	Name: "未知",
-}
-
-type Author struct {
-	Id   int64
-	Name string
 }

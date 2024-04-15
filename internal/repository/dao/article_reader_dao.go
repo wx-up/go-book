@@ -13,10 +13,18 @@ import (
 type ReaderArticleDAO interface {
 	// Upsert 有就更新，没有就插入
 	Upsert(ctx context.Context, obj model.PublishArticle) (int64, error)
+
+	// GetById 获取线上库的文章详情
+	GetById(ctx context.Context, id int64) (model.PublishArticle, error)
 }
 
 type GORMReaderArticleDAO struct {
 	p DBProvider
+}
+
+func (g *GORMReaderArticleDAO) GetById(ctx context.Context, id int64) (model.PublishArticle, error) {
+	// TODO implement me
+	panic("implement me")
 }
 
 func NewGORMReaderArticleDAO(p DBProvider) *GORMReaderArticleDAO {

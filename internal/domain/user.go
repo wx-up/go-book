@@ -7,6 +7,7 @@ import "time"
 // 其他也有地方叫做 BO（ business object ）
 type User struct {
 	Id         int64
+	Nickname   string
 	Email      string
 	Password   string
 	Phone      string

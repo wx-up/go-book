@@ -62,7 +62,7 @@ func (h *UserHandler) RegisterRoutes(engine *gin.Engine) {
 	ug.POST("/profile", h.Profile)
 
 	// 验证码发送
-	ug.POST("/code/send", ginx.WrapHandle[SendCodeReq](h.SendCode))
+	ug.POST("/code/send", ginx.WrapHandleWithReq[SendCodeReq](h.SendCode))
 	// 验证码验证+登陆
 	ug.POST("/code/verify", h.VerifyCode)
 

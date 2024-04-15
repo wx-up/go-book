@@ -22,7 +22,7 @@ type Result struct {
 	Data any    `json:"data"`
 }
 
-func WrapHandleWithClaim[Req any, Claim jwt.Claims](
+func WrapHandleWithReqAndClaim[Req any, Claim jwt.Claims](
 	claimKey string,
 	handle func(ctx *gin.Context, req Req, claim Claim) (Result, error),
 ) gin.HandlerFunc {
@@ -76,7 +76,7 @@ func WrapHandleV2[Req any](
 	}
 }
 
-func WrapHandle[Req any](f func(ctx *gin.Context, req Req) (Result, error)) gin.HandlerFunc {
+func WrapHandleWithReq[Req any](f func(ctx *gin.Context, req Req) (Result, error)) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var req Req
 		if err := ctx.ShouldBind(&req); err != nil {
@@ -87,6 +87,35 @@ func WrapHandle[Req any](f func(ctx *gin.Context, req Req) (Result, error)) gin.
 			return
 		}
 		result, err := f(ctx, req)
+		if err != nil {
+			L.Error("业务逻辑处理错误", logger.Field{
+				Key:   "err",
+				Value: err,
+			})
+		}
+		ctx.JSON(http.StatusOK, result)
+	}
+}
+
+func WrapHandleWithClaim[Claim jwt.Claims](claimKey string, f func(ctx *gin.Context, claim Claim) (Result, error)) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		val, ok := ctx.Get(claimKey)
+		if !ok {
+			ctx.JSON(http.StatusOK, Result{
+				Code: -1,
+				Msg:  "用户未登录",
+			})
+			return
+		}
+		claim, ok := val.(Claim)
+		if !ok {
+			ctx.JSON(http.StatusOK, Result{
+				Code: -1,
+				Msg:  "用户未登录",
+			})
+			return
+		}
+		result, err := f(ctx, claim)
 		if err != nil {
 			L.Error("业务逻辑处理错误", logger.Field{
 				Key:   "err",

@@ -14,10 +14,29 @@ var ErrArticleNotFound = repository.ErrArticleNotFound
 type ArticleService interface {
 	Save(ctx context.Context, article domain.Article) (int64, error)
 	Publish(ctx context.Context, article domain.Article) (int64, error)
+	List(ctx context.Context, uid int64, page, size int64) ([]domain.Article, error)
+	Detail(ctx context.Context, id int64) (domain.Article, error)
+
+	PublishedDetail(ctx context.Context, id int64) (domain.Article, error)
 }
 
 type articleService struct {
 	repo repository.ArticleRepository
+}
+
+func (a *articleService) PublishedDetail(ctx context.Context, id int64) (domain.Article, error) {
+	// 在这里调用 userService 进行 组装
+	// TODO implement me
+	panic("implement me")
+}
+
+func (a *articleService) Detail(ctx context.Context, id int64) (domain.Article, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (a *articleService) List(ctx context.Context, uid, page, size int64) ([]domain.Article, error) {
+	return a.repo.GetByAuthorId(ctx, uid, page, size)
 }
 
 func (a *articleService) Publish(ctx context.Context, article domain.Article) (int64, error) {
