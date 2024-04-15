@@ -39,3 +39,17 @@ type Logger interface {
 	Error(msg string, args ...Field)
 	Fatal(msg string, args ...Field)
 }
+
+func Error(val any) Field {
+	return Field{
+		Key:   "error",
+		Value: val,
+	}
+}
+
+func Int64(key string, val int64) Field {
+	return Field{
+		Key:   key,
+		Value: val,
+	}
+}

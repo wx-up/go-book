@@ -22,3 +22,6 @@ type ArticleVO struct {
 	// 如果业务会发展到国际化，那么也可以考虑后端来处理
 	Status uint8 `json:"status"`
 }
+
+type ArticleLikeReq struct {
+}

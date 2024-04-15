@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/wx-up/go-book/pkg/logger"
+
 	"github.com/wx-up/go-book/pkg/slice"
 
 	"github.com/wx-up/go-book/pkg/ginx"
@@ -22,12 +24,16 @@ import (
 var _ handler = (*ArticleHandler)(nil)
 
 type ArticleHandler struct {
-	svc service.ArticleService
+	svc     service.ArticleService
+	incrSvc service.InteractiveService
+	l       logger.Logger
 }
 
-func NewArticleHandler(svc service.ArticleService) *ArticleHandler {
+func NewArticleHandler(svc service.ArticleService, l logger.Logger, incrSvc service.InteractiveService) *ArticleHandler {
 	return &ArticleHandler{
-		svc: svc,
+		svc:     svc,
+		l:       l,
+		incrSvc: incrSvc,
 	}
 }
 
@@ -41,7 +47,9 @@ func (h *ArticleHandler) RegisterRoutes(engine *gin.Engine) {
 
 	// 线上库，也就是用户端访问
 	gp := g.Group("/pub")
-	gp.GET("/:id", ginx.WrapHandleWithClaim[jwt.UserClaim]("claims", h.PublishedDetail))
+	gp.GET("/:id",
+		ginx.WrapHandleWithClaim[jwt.UserClaim]("claims", h.PublishedDetail),
+	)
 }
 
 func (h *ArticleHandler) PublishedDetail(ctx *gin.Context, claims jwt.UserClaim) (Result, error) {
@@ -54,6 +62,15 @@ func (h *ArticleHandler) PublishedDetail(ctx *gin.Context, claims jwt.UserClaim)
 		}, err
 	}
 	_ = id
+
+	// 增加阅读计数
+	go func() {
+		er := h.incrSvc.IncrReadCount(ctx, "articles", id)
+		if er != nil {
+			h.l.Error("增加阅读计数失败", logger.Error(er), logger.Int64("aid", id))
+		}
+	}()
+
 	return Result{}, nil
 }
 
