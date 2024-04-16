@@ -16,9 +16,7 @@ import (
 	"github.com/wx-up/go-book/internal/service/code"
 	"github.com/wx-up/go-book/internal/web"
 	"github.com/wx-up/go-book/ioc"
-)
 
-import (
 	_ "github.com/spf13/viper/remote"
 )
 
@@ -45,7 +43,7 @@ func InitWebService() *gin.Engine {
 	gormArticleDAO := dao.NewGORMArticleDAO(dbProvider)
 	cacheArticleRepository := repository.NewCacheArticleRepository(gormArticleDAO)
 	articleService := service.NewArticleService(cacheArticleRepository)
-	articleHandler := web.NewArticleHandler(articleService)
+	articleHandler := web.NewArticleHandler(articleService, nil, nil)
 	engine := ioc.InitWeb(v, userHandler, oAuth2WechatHandler, articleHandler)
 	return engine
 }

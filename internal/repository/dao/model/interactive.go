@@ -52,7 +52,6 @@ type UserLikeBiz struct {
 type UserCollectionBiz struct {
 	Id int64 `gorm:"primaryKey;autoIncrement"`
 
-	Cid   int64  `gorm:"uniqueIndex:uid_biz_id_collect"`
 	Uid   int64  `gorm:"uniqueIndex:uid_biz_id_collect"`
 	BizId int64  `gorm:"uniqueIndex:uid_biz_id_collect"`
 	Biz   string `gorm:"uniqueIndex:uid_biz_id_collect"`
@@ -61,6 +60,9 @@ type UserCollectionBiz struct {
 
 	// 收藏夹的ID
 	// 收藏夹ID本身有索引
+
+	Cid int64 `gorm:"index"`
+
 	UpdateTime int64
 	CreateTime int64
 }

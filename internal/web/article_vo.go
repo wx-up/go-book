@@ -17,11 +17,16 @@ type ArticleVO struct {
 	CreateTime string `json:"create_time"`
 	UpdateTime string `json:"update_time"`
 
+	LikeCnt    int64 `json:"like_cnt"`
+	CollectCnt int64 `json:"collect_cnt"`
+	ReadCnt    int64 `json:"read_cnt"`
+	Liked      bool  `json:"liked"`
+	Collected  bool  `json:"collected"`
+
 	// 状态转文字显示
 	// 如果客户端是手机APP、小程序等涉及发版本的，可以考虑后端来处理，比如新增 StatusText 字段
 	// 如果业务会发展到国际化，那么也可以考虑后端来处理
 	Status uint8 `json:"status"`
 }
 
-type ArticleLikeReq struct {
-}
+type ArticleLikeReq struct{}

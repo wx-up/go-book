@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/wx-up/go-book/pkg/logger"
 
 	"github.com/wx-up/go-book/pkg/slice"
@@ -61,7 +63,29 @@ func (h *ArticleHandler) PublishedDetail(ctx *gin.Context, claims jwt.UserClaim)
 			Msg:  "参数错误",
 		}, err
 	}
-	_ = id
+
+	// 因为获取文章主体和指标信息并不是互相依赖的，所以可以并发处理
+	var eg errgroup.Group
+	var detail domain.Article
+	eg.Go(func() error {
+		detail, err = h.svc.PublishedDetail(ctx, id)
+		return err
+	})
+	var inter domain.Interactive
+	eg.Go(func() error {
+		inter, err = h.incrSvc.Get(ctx, "articles", detail.Id, claims.Uid)
+		// 容错
+		if err != nil {
+			h.l.Error("获取文章指标信息失败", logger.Error(err), logger.Int64("aid", detail.Id))
+		}
+		return nil
+	})
+	if err = eg.Wait(); err != nil {
+		return Result{
+			Code: 5,
+			Msg:  "服务器错误",
+		}, err
+	}
 
 	// 增加阅读计数
 	go func() {
@@ -71,7 +95,24 @@ func (h *ArticleHandler) PublishedDetail(ctx *gin.Context, claims jwt.UserClaim)
 		}
 	}()
 
-	return Result{}, nil
+	return Result{
+		Data: ArticleVO{
+			Id:         detail.Id,
+			Title:      detail.Title,
+			Abstract:   detail.Abstract(),
+			Content:    detail.Content,
+			AuthorId:   detail.Author.Id,
+			AuthorName: detail.Author.Name,
+			CreateTime: detail.CreateTime.Format(time.DateTime),
+			UpdateTime: detail.UpdateTime.Format(time.DateTime),
+			LikeCnt:    inter.LikeCnt,
+			CollectCnt: inter.CollectCnt,
+			ReadCnt:    inter.ReadCnt,
+			Liked:      inter.Liked,
+			Collected:  inter.Collected,
+			Status:     detail.Status.ToUint8(),
+		},
+	}, nil
 }
 
 type PublishArticleReq struct {

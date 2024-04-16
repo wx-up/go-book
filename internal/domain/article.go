@@ -10,6 +10,8 @@ type Article struct {
 	Status     ArticleStatus
 	CreateTime time.Time
 	UpdateTime time.Time
+
+	Inter Interactive
 }
 type Author struct {
 	Id   int64

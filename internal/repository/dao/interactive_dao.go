@@ -11,6 +11,11 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	ErrInteractiveLikedNotFound     = gorm.ErrRecordNotFound
+	ErrInteractiveCollectedNotFound = gorm.ErrRecordNotFound
+)
+
 type InteractiveDao interface {
 	IncrReadCnt(ctx context.Context, biz string, bid int64) error
 
@@ -19,10 +24,32 @@ type InteractiveDao interface {
 
 	InsertCollectionInfo(ctx context.Context, cbo model.UserCollectionBiz) error
 	DelCollectionInfo(ctx context.Context, cbo model.UserCollectionBiz) error
+
+	GetLikeInfo(ctx context.Context, info model.UserLikeBiz) (model.UserLikeBiz, error)
+	GetCollectionInfo(ctx context.Context, info model.UserCollectionBiz) (model.UserCollectionBiz, error)
+
+	Get(ctx context.Context, biz string, bid int64) (model.Interactive, error)
 }
 
 type GORMInteractiveDao struct {
 	db *gorm.DB
+}
+
+func (g *GORMInteractiveDao) Get(ctx context.Context, biz string, bid int64) (model.Interactive, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (g *GORMInteractiveDao) GetLikeInfo(ctx context.Context, info model.UserLikeBiz) (model.UserLikeBiz, error) {
+	var res model.UserLikeBiz
+	err := g.db.WithContext(ctx).Where("biz = ? AND biz_id = ? AND uid = ? AND status = 1", info.Biz, info.BizId, info.Uid).First(&res).Error
+	return res, err
+}
+
+func (g *GORMInteractiveDao) GetCollectionInfo(ctx context.Context, info model.UserCollectionBiz) (model.UserCollectionBiz, error) {
+	var res model.UserCollectionBiz
+	err := g.db.WithContext(ctx).Where("biz = ? AND biz_id = ? AND uid = ? AND status = 1", info.Biz, info.BizId, info.Uid).First(&res).Error
+	return res, err
 }
 
 func (g *GORMInteractiveDao) DelCollectionInfo(ctx context.Context, cbo model.UserCollectionBiz) error {

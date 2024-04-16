@@ -63,7 +63,7 @@ func (r *RedisArticleCache) firstPageKey(authorId int64) string {
 }
 
 func (r *RedisArticleCache) pubKey(id int64) string {
-	return fmt.Sprintf("article:pub:detail:%s", id)
+	return fmt.Sprintf("article:pub:detail:%d", id)
 }
 
 func (r *RedisArticleCache) key(id int64) string {

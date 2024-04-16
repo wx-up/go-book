@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"math/rand"
@@ -12,6 +13,8 @@ import (
 	"testing"
 	"time"
 	"unsafe"
+
+	"golang.org/x/sync/errgroup"
 
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -296,4 +299,21 @@ func Test_Number(t *testing.T) {
 	fmt.Println(strconv.FormatInt(n, 2))
 
 	fmt.Println(math.Pow(2, 12))
+}
+
+func Test_Err(t *testing.T) {
+	eg := errgroup.Group{}
+	eg.SetLimit(3)
+	eg.TryGo(func() error {
+		return errors.New("error")
+	})
+	eg.TryGo(func() error {
+		fmt.Println("2")
+		return nil
+	})
+	eg.TryGo(func() error {
+		fmt.Println("3")
+		return nil
+	})
+	fmt.Println(eg.Wait())
 }
