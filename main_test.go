@@ -317,3 +317,54 @@ func Test_Err(t *testing.T) {
 	})
 	fmt.Println(eg.Wait())
 }
+
+func Test_Channel1(t *testing.T) {
+	c1 := make(chan int, 1)
+	c2 := make(chan int, 1)
+	c1 <- 1
+	c2 <- 2
+	select {
+	case v1 := <-c1:
+		fmt.Println(v1)
+		fmt.Println(<-c2)
+	case v2 := <-c2:
+		fmt.Println(v2)
+		fmt.Println(<-c1)
+	default:
+		fmt.Println("default")
+	}
+}
+
+func Test_Channel(t *testing.T) {
+	ch := make(chan int, 2)
+	ch <- 1
+	ch <- 3
+	close(ch)
+	val, ok := <-ch
+	fmt.Println(val, ok)
+	val, ok = <-ch
+	fmt.Println(val, ok)
+	val, ok = <-ch
+	fmt.Println(val, ok)
+	val = <-ch
+	fmt.Println(val)
+
+	//select {
+	//case ch <- 1:
+	//default:
+	//	fmt.Println("channel is full")
+	//}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	cancel()
+	select {
+	case <-ctx.Done():
+		fmt.Println("context is done")
+	default:
+	}
+}
+
+func Test_Channel2(t *testing.T) {
+
+}
