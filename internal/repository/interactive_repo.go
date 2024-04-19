@@ -18,6 +18,10 @@ import (
 type InteractiveRepository interface {
 	IncrReadCnt(ctx context.Context, biz string, bizID int64) error
 
+	// BatchIncrReadCnt 批量增加阅读数
+	// 如果 biz 和 bid 都是一样的，可以设计成 IncrReadCntN(ctx context.Context, biz string, bizID int64,delay int64) error
+	BatchIncrReadCnt(ctx context.Context, biz string, bizIDs []int64) error
+
 	// IncrLikeCnt 增加点赞数
 	IncrLikeCnt(ctx context.Context, biz string, bizID int64, uid int64) error
 	// DecrLikeCnt 取消点赞
@@ -39,6 +43,19 @@ type CacheInteractiveRepository struct {
 	dao   dao.InteractiveDao
 	cache cache.InteractiveCache
 	l     logger.Logger
+}
+
+func (c *CacheInteractiveRepository) BatchIncrReadCnt(ctx context.Context, biz string, bizIDs []int64) error {
+	// TODO implement me
+	panic("implement me")
+}
+
+func NewCacheInteractiveRepository(dao dao.InteractiveDao, cache cache.InteractiveCache, l logger.Logger) *CacheInteractiveRepository {
+	return &CacheInteractiveRepository{
+		dao:   dao,
+		cache: cache,
+		l:     l,
+	}
 }
 
 func (c *CacheInteractiveRepository) DecrLikeCnt(ctx context.Context, biz string, bizID int64, uid int64) error {

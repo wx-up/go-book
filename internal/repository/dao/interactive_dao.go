@@ -18,6 +18,7 @@ var (
 
 type InteractiveDao interface {
 	IncrReadCnt(ctx context.Context, biz string, bid int64) error
+	BatchIncrReadCnt(ctx context.Context, biz string, bid []int64) error
 
 	InsertLikeInfo(ctx context.Context, biz string, bid int64, uid int64) error
 	DelLikeInfo(ctx context.Context, biz string, bid int64, uid int64) error
@@ -33,6 +34,28 @@ type InteractiveDao interface {
 
 type GORMInteractiveDao struct {
 	db *gorm.DB
+}
+
+// BatchIncrReadCnt
+// 批处理增加阅读计数
+// 虽然事务里面还是for循环更新记录，但是事务的次数只有一次
+// 如果没有批操作的话，需要for循环更新1000条记录，事务的次数就会是1000
+// 事务操作在mysql中也是比较重的操作
+func (g *GORMInteractiveDao) BatchIncrReadCnt(ctx context.Context, biz string, bid []int64) error {
+	// 可以进一步使用 map 优化
+	// 以 biz+bid 作为 key，出现的次数作为 value
+	// 计数直接增加 value 就可以，不用一次一次的增加
+	return g.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		dao := NewGORMInteractiveDao(tx)
+		for _, b := range bid {
+			err := dao.IncrReadCnt(ctx, biz, b)
+			if err != nil {
+				// 阅读计数失败就失败，无关紧要，不用回滚事务
+				// 记录日志
+			}
+		}
+		return nil
+	})
 }
 
 func (g *GORMInteractiveDao) Get(ctx context.Context, biz string, bid int64) (model.Interactive, error) {

@@ -6,3 +6,8 @@ redis:
   addr: "localhost:7379"
   password: ""
   db: 0
+
+
+kafka:
+  addr:
+    - "localhost:9092"

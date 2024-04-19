@@ -27,13 +27,22 @@ func main() {
 	initConfig()
 	initLogger()
 
-	engine := InitWebService()
+	app := InitWebService()
+
+	// 启动消费者
+	// 这里不够优雅，如果第一个消费者启动成功，后面的消费者失败，理论上应该让第一个消费则退出，go-zero有类似的实现
+	// 这里粗暴一点，直接panic退出
+	for _, c := range app.cs {
+		if err := c.Start(); err != nil {
+			panic(err)
+		}
+	}
 
 	// 启动服务
 	addr := ":8080"
 	server := &http.Server{
 		Addr:    addr,
-		Handler: engine,
+		Handler: app.engine,
 	}
 
 	startErrChain := make(chan error, 2)

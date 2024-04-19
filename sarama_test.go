@@ -127,6 +127,10 @@ func (t testAsyncConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSessi
 	panic("implement me")
 }
 
+// ConsumeClaim 异步消费，批量提交
+// 这种方案其实可以解决消息挤压的问题，但是因为消费消息最后还是操作了数据库，因此
+// 异步（ 并发 ）消费时，数据库压力会很大
+// 这时可以考虑对数据库的操作改成批量接口（ 核心就是一次事务代替了多次事务的操作 ）
 func (t testAsyncConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	ms := claim.Messages()
 	const batchSize = 10
@@ -156,10 +160,12 @@ func (t testAsyncConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroup
 		err := eg.Wait()
 		if err != nil {
 			// 说明存在消息消费失败，需要重试，这里重试的话是整个批次重试，也可以分散到每个消息中去重试
-			// 如果重试失败就记录日志，这里必须记录日志，否则位移提交之后，就消费不到这个消息了
+			// 如果重试失败就记录日志，这里必须记录日志（ 后续手动处理 ），否则位移提交之后，就消费不到这个消息了
 			continue
 		}
 		// 提交最后一个消息即可
+		// 稍微会有问题：如果一个消费者对应多个分区的时候，就有可能有些分区的消息没有提交，这时候就 for _, msg := range batch 循环提交
+		// 如果消费者和分区一对一，则没有什么问题
 		session.MarkMessage(last, "")
 	}
 }

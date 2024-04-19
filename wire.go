@@ -3,8 +3,8 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
+	article "github.com/wx-up/go-book/internal/events/articles"
 	"github.com/wx-up/go-book/internal/repository"
 	"github.com/wx-up/go-book/internal/repository/cache"
 	"github.com/wx-up/go-book/internal/repository/dao"
@@ -12,14 +12,17 @@ import (
 	"github.com/wx-up/go-book/internal/service/code"
 	"github.com/wx-up/go-book/internal/web"
 	"github.com/wx-up/go-book/ioc"
+	"github.com/wx-up/go-book/pkg/logger"
 )
 
 var thirdSet = wire.NewSet(
 	ioc.CreateRedis,
 	ioc.CreateMysql,
-	ioc.CreateLogger,
 	ioc.CreateJwtHandler,
 	ioc.CreateDBProvider,
+	logger.NewZapLogger,
+	ioc.CreateLogger,
+	wire.Bind(new(logger.Logger), new(*logger.ZapLogger)),
 )
 
 var userSvcSet = wire.NewSet(
@@ -48,13 +51,20 @@ var wechatHandlerSet = wire.NewSet(
 var articleHandlerSet = wire.NewSet(
 	web.NewArticleHandler,
 	service.NewArticleService,
+	service.NewInteractiveService,
 	wire.Bind(new(repository.ArticleRepository), new(*repository.CacheArticleRepository)),
 	repository.NewCacheArticleRepository,
+	repository.NewCacheInteractiveRepository,
+	wire.Bind(new(repository.InteractiveRepository), new(*repository.CacheInteractiveRepository)),
+	dao.NewGORMInteractiveDao,
+	wire.Bind(new(dao.InteractiveDao), new(*dao.GORMInteractiveDao)),
 	wire.Bind(new(dao.ArticleDAO), new(*dao.GORMArticleDAO)),
 	dao.NewGORMArticleDAO,
+	cache.NewRedisInteractiveCache,
+	wire.Bind(new(cache.InteractiveCache), new(*cache.RedisInteractiveCache)),
 )
 
-func InitWebService() *gin.Engine {
+func InitWebService() *App {
 	wire.Build(
 		// 基础组件
 		thirdSet,
@@ -74,7 +84,14 @@ func InitWebService() *gin.Engine {
 		ioc.CreateMiddlewares,
 		// web服务
 		ioc.InitWeb,
+
+		// 消费者
+		article.NewReadEventKafkaConsumer,
+		ioc.InitKafka,
+		ioc.CreateConsumers,
+
+		wire.Struct(new(App), "*"),
 	)
 
-	return new(gin.Engine)
+	return new(App)
 }

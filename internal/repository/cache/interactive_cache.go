@@ -26,6 +26,7 @@ const (
 type InteractiveCache interface {
 	IncrCollectCntIfPresent(ctx context.Context, biz string, bid int64) error
 	IncrReadCntIfPresent(ctx context.Context, biz string, bid int64) error
+	BatchIncrReadCntIfPresent(ctx context.Context, biz string, bids []int64) error
 	IncrLikeCntIfPresent(ctx context.Context, biz string, bid int64) error
 	// CancelLikeCntIfPresent 取消点赞
 	CancelLikeCntIfPresent(ctx context.Context, biz string, bid int64) error
@@ -37,6 +38,13 @@ type InteractiveCache interface {
 type RedisInteractiveCache struct {
 	client     redis.Cmdable
 	expiration time.Duration
+}
+
+func (r *RedisInteractiveCache) BatchIncrReadCntIfPresent(ctx context.Context, biz string, bids []int64) error {
+	// 目前的 luaIncrCnt 脚本不支持批量操作，如果循环调用的话其实性能比较差的
+	// 可以重新写一个lua脚本支持这个批量操作
+	// 相当于一个优化，和 redis 的交互只有一次了
+	return nil
 }
 
 func (r *RedisInteractiveCache) Set(ctx context.Context, biz string, bid int64, inter domain.Interactive) error {
@@ -73,10 +81,10 @@ func (r *RedisInteractiveCache) CancelLikeCntIfPresent(ctx context.Context, biz 
 	})
 }
 
-func NewRedisInteractiveCache(client redis.Cmdable, expiration time.Duration) *RedisInteractiveCache {
+func NewRedisInteractiveCache(client redis.Cmdable) *RedisInteractiveCache {
 	return &RedisInteractiveCache{
 		client:     client,
-		expiration: expiration,
+		expiration: time.Second * 10,
 	}
 }
 

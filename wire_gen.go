@@ -7,8 +7,8 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
+	"github.com/wx-up/go-book/internal/events/articles"
 	"github.com/wx-up/go-book/internal/repository"
 	"github.com/wx-up/go-book/internal/repository/cache"
 	"github.com/wx-up/go-book/internal/repository/dao"
@@ -16,13 +16,16 @@ import (
 	"github.com/wx-up/go-book/internal/service/code"
 	"github.com/wx-up/go-book/internal/web"
 	"github.com/wx-up/go-book/ioc"
+	"github.com/wx-up/go-book/pkg/logger"
+)
 
+import (
 	_ "github.com/spf13/viper/remote"
 )
 
 // Injectors from wire.go:
 
-func InitWebService() *gin.Engine {
+func InitWebService() *App {
 	cmdable := ioc.CreateRedis()
 	handler := ioc.CreateJwtHandler(cmdable)
 	v := ioc.CreateMiddlewares(handler)
@@ -31,8 +34,8 @@ func InitWebService() *gin.Engine {
 	userDAO := dao.NewGORMUserDAO(dbProvider)
 	userCache := cache.NewRedisUserCache(cmdable)
 	userRepository := repository.NewCacheUserRepository(userDAO, userCache)
-	logger := ioc.CreateLogger()
-	userService := service.NewUserService(userRepository, logger)
+	zapLogger := ioc.CreateLogger()
+	userService := service.NewUserService(userRepository, zapLogger)
 	smsService := ioc.CreateSMSService()
 	codeCache := cache.NewRedisCodeCache(cmdable)
 	codeRepository := repository.NewCacheCodeRepository(codeCache)
@@ -43,14 +46,26 @@ func InitWebService() *gin.Engine {
 	gormArticleDAO := dao.NewGORMArticleDAO(dbProvider)
 	cacheArticleRepository := repository.NewCacheArticleRepository(gormArticleDAO)
 	articleService := service.NewArticleService(cacheArticleRepository)
-	articleHandler := web.NewArticleHandler(articleService, nil, nil)
+	loggerZapLogger := logger.NewZapLogger(zapLogger)
+	gormInteractiveDao := dao.NewGORMInteractiveDao(db)
+	redisInteractiveCache := cache.NewRedisInteractiveCache(cmdable)
+	cacheInteractiveRepository := repository.NewCacheInteractiveRepository(gormInteractiveDao, redisInteractiveCache, loggerZapLogger)
+	interactiveService := service.NewInteractiveService(cacheInteractiveRepository)
+	articleHandler := web.NewArticleHandler(articleService, loggerZapLogger, interactiveService)
 	engine := ioc.InitWeb(v, userHandler, oAuth2WechatHandler, articleHandler)
-	return engine
+	client := ioc.InitKafka()
+	readEventKafkaConsumer := article.NewReadEventKafkaConsumer(loggerZapLogger, cacheInteractiveRepository, client)
+	v2 := ioc.CreateConsumers(readEventKafkaConsumer)
+	app := &App{
+		engine: engine,
+		cs:     v2,
+	}
+	return app
 }
 
 // wire.go:
 
-var thirdSet = wire.NewSet(ioc.CreateRedis, ioc.CreateMysql, ioc.CreateLogger, ioc.CreateJwtHandler, ioc.CreateDBProvider)
+var thirdSet = wire.NewSet(ioc.CreateRedis, ioc.CreateMysql, ioc.CreateJwtHandler, ioc.CreateDBProvider, logger.NewZapLogger, ioc.CreateLogger, wire.Bind(new(logger.Logger), new(*logger.ZapLogger)))
 
 var userSvcSet = wire.NewSet(service.NewUserService, repository.NewCacheUserRepository, dao.NewGORMUserDAO, cache.NewRedisUserCache)
 
@@ -60,4 +75,4 @@ var userHandlerSet = wire.NewSet(web.NewUserHandler)
 
 var wechatHandlerSet = wire.NewSet(web.NewOAuth2WechatHandler, ioc.CreateOAuth2WechatService)
 
-var articleHandlerSet = wire.NewSet(web.NewArticleHandler, service.NewArticleService, wire.Bind(new(repository.ArticleRepository), new(*repository.CacheArticleRepository)), repository.NewCacheArticleRepository, wire.Bind(new(dao.ArticleDAO), new(*dao.GORMArticleDAO)), dao.NewGORMArticleDAO)
+var articleHandlerSet = wire.NewSet(web.NewArticleHandler, service.NewArticleService, service.NewInteractiveService, wire.Bind(new(repository.ArticleRepository), new(*repository.CacheArticleRepository)), repository.NewCacheArticleRepository, repository.NewCacheInteractiveRepository, wire.Bind(new(repository.InteractiveRepository), new(*repository.CacheInteractiveRepository)), dao.NewGORMInteractiveDao, wire.Bind(new(dao.InteractiveDao), new(*dao.GORMInteractiveDao)), wire.Bind(new(dao.ArticleDAO), new(*dao.GORMArticleDAO)), dao.NewGORMArticleDAO, cache.NewRedisInteractiveCache, wire.Bind(new(cache.InteractiveCache), new(*cache.RedisInteractiveCache)))

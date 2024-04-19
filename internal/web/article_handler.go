@@ -88,12 +88,12 @@ func (h *ArticleHandler) PublishedDetail(ctx *gin.Context, claims jwt.UserClaim)
 	}
 
 	// 增加阅读计数
-	go func() {
-		er := h.incrSvc.IncrReadCount(ctx, "articles", id)
-		if er != nil {
-			h.l.Error("增加阅读计数失败", logger.Error(er), logger.Int64("aid", id))
-		}
-	}()
+	//go func() {
+	//	er := h.incrSvc.IncrReadCount(ctx, "articles", id)
+	//	if er != nil {
+	//		h.l.Error("增加阅读计数失败", logger.Error(er), logger.Int64("aid", id))
+	//	}
+	//}()
 
 	return Result{
 		Data: ArticleVO{
