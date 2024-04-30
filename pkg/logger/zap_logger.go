@@ -18,22 +18,22 @@ func (z *ZapLogger) Debug(msg string, args ...Field) {
 
 func (z *ZapLogger) Info(msg string, args ...Field) {
 	// TODO implement me
-	panic("implement me")
+	// panic("implement me")
 }
 
 func (z *ZapLogger) Warn(msg string, args ...Field) {
 	// TODO implement me
-	panic("implement me")
+	// panic("implement me")
 }
 
 func (z *ZapLogger) Error(msg string, args ...Field) {
 	// TODO implement me
-	panic("implement me")
+	// panic("implement me")
 }
 
 func (z *ZapLogger) Fatal(msg string, args ...Field) {
 	// TODO implement me
-	panic("implement me")
+	// panic("implement me")
 }
 
 func (z *ZapLogger) toZapFields(args []Field) []zap.Field {

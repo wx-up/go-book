@@ -2,6 +2,9 @@ package ginx
 
 import (
 	"net/http"
+	"strconv"
+
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/golang-jwt/jwt/v5"
 
@@ -14,6 +17,13 @@ var L logger.Logger = &logger.NopLogger{}
 
 func InitLogger(l logger.Logger) {
 	L = l
+}
+
+var vector *prometheus.CounterVec
+
+func InitCounterVec(opts prometheus.CounterOpts) {
+	vector = prometheus.NewCounterVec(opts, []string{"code"})
+	prometheus.MustRegister(vector)
 }
 
 type Result struct {
@@ -59,6 +69,9 @@ func WrapHandleWithReqAndClaim[Req any, Claim jwt.Claims](
 				Value: err,
 			})
 		}
+
+		vector.WithLabelValues(strconv.Itoa(result.Code)).Inc()
+
 		ctx.JSON(http.StatusOK, result)
 	}
 }

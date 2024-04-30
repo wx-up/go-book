@@ -117,6 +117,7 @@ func (c *CacheArticleRepository) preCache(ctx context.Context, objs []domain.Art
 	if len(objs) <= 0 {
 		return nil
 	}
+	ctx = context.WithValue(ctx, "biz", "article")
 	return c.cache.Set(ctx, objs[0], time.Second*30)
 }
 

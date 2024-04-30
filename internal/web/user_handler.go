@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/wx-up/go-book/internal/errs"
+
 	"github.com/wx-up/go-book/pkg/ginx"
 
 	"github.com/wx-up/go-book/internal/web/jwt"
@@ -100,7 +102,10 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 		return
 	}
 	if !ok {
-		ctx.String(http.StatusOK, "邮箱格式不正确")
+		ctx.JSON(http.StatusOK, Result{
+			Code: errs.UserInputValid,
+			Msg:  "邮箱格式不正确",
+		})
 		return
 	}
 
@@ -147,6 +152,7 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 
 	// 邮箱验证
 	u, err := h.svc.Login(ctx, domain.User{Email: req.Email, Password: req.Password})
+	// u, err := h.svc.Login(ctx.Request.Context(), domain.User{Email: req.Email, Password: req.Password})
 	if err == service.ErrInvalidUserOrPassword {
 		ctx.String(http.StatusOK, "账号或者密码不对")
 		return

@@ -1,7 +1,12 @@
 package ioc
 
 import (
+	"math/rand"
 	"time"
+
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+
+	"github.com/wx-up/go-book/pkg/ginx/metric"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
@@ -26,9 +31,15 @@ func InitWeb(ms []gin.HandlerFunc,
 ) *gin.Engine {
 	engine := gin.Default()
 	engine.Use(ms...)
+	// OpenTelemetry
+	engine.Use(otelgin.Middleware("service"))
 	uh.RegisterRoutes(engine)
 	wh.RegisterRoutes(engine)
 	ah.RegisterRoutes(engine)
+	engine.GET("/test", func(context *gin.Context) {
+		randInt := rand.Intn(1000)
+		time.Sleep(time.Millisecond * time.Duration(randInt))
+	})
 	return engine
 }
 
@@ -50,6 +61,15 @@ func CreateMiddlewares(jwtHandler jwt.Handler) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		// 请求体和响应打印
 		accessLoggerBuilder.Build(),
+
+		// metrics
+		(&metric.MiddlewareBuilder{
+			Namespace:  "wx",
+			Subsystem:  "go_book",
+			Name:       "gin_http",
+			Help:       "http 请求响应指标",
+			InstanceId: "localhost",
+		}).Build(),
 		// 跨域
 		cors.New(cors.Config{
 			AllowMethods:     []string{"PUT", "PATCH", "POST"},
@@ -68,6 +88,7 @@ func CreateMiddlewares(jwtHandler jwt.Handler) []gin.HandlerFunc {
 			IgnorePaths("/users/code/verify").
 			IgnorePaths("/oauth2/wechat/callback").
 			IgnorePaths("/users/refresh_token").
+			IgnorePaths("/test").
 			IgnorePaths("/oauth2/wechat/auth_url").Build(),
 
 		// 限流

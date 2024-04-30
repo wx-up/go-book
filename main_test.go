@@ -365,6 +365,15 @@ func Test_Channel(t *testing.T) {
 	}
 }
 
-func Test_Channel2(t *testing.T) {
+func Test_Context(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	fmt.Println(ctx)
+	cancel()
+	fmt.Println("关闭一次")
+	cancel()
+	fmt.Println("关闭两次")
+}
 
+func name() string {
+	return ""
 }

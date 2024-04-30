@@ -1,5 +1,11 @@
 package model
 
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
+
 // Article 制作库的文章表
 // 设计索引可以从业务角度出发，高频的 SQL 查询 Where 条件是什么
 // 制作库的文章表，从业务角度高频的操作就是打开草稿箱或者打开已经发布的文章，里面都是我的文章
@@ -20,6 +26,27 @@ type Article struct {
 	// 有些人会考虑到经常使用状态来查询，比如 WHERE status = xxx AND xxx
 	// 所以会在 status 上和别的列一起创建一个联合索引
 	Status uint8
+}
+
+func (*Article) BeforeCreate(tx *gorm.DB) error {
+	startTime := time.Now()
+	tx.Set("start_time", startTime)
+	return nil
+}
+
+func (*Article) AfterCreate(tx *gorm.DB) error {
+	val, _ := tx.Get("start_time")
+
+	// val=nil 也是可以断言的，不会 panic
+	startTime, ok := val.(time.Time)
+	if !ok {
+		return nil
+	}
+
+	// 执行时间
+	duration := time.Since(startTime)
+	_ = duration
+	return nil
 }
 
 // PublishArticle 线上库的文章表

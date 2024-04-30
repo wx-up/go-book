@@ -4,7 +4,11 @@ import (
 	"context"
 	"sync"
 
+	"github.com/wx-up/go-book/pkg/redisx"
+
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/viper"
+	"github.com/wx-up/go-book/internal/repository/cache"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/wx-up/go-book/config"
@@ -36,4 +40,18 @@ func CreateRedis() redis.Cmdable {
 		}
 	})
 	return redisClient
+}
+
+func CreateArticleRedisCache(client *redis.Client) cache.ArticleCache {
+	client.AddHook(redisx.NewPrometheusHook(prometheus.SummaryOpts{
+		Namespace: "wx",
+		Subsystem: "go_book",
+		Name:      "redis_resp_time",
+		Help:      "统计缓存服务的性能数据",
+		ConstLabels: map[string]string{
+			"biz": "article",
+		},
+		Objectives: map[float64]float64{},
+	}))
+	return cache.NewRedisArticleCache(client)
 }

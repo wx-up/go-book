@@ -10,6 +10,16 @@ import (
 	"syscall"
 	"time"
 
+	"go.opentelemetry.io/otel/exporters/zipkin"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
+
+	"go.opentelemetry.io/otel"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"go.uber.org/zap"
 
 	"github.com/fsnotify/fsnotify"
@@ -21,13 +31,16 @@ import (
 	_ "github.com/spf13/viper/remote"
 )
 
-// 23:00:00
+// 01:49:13
 func main() {
 	// InitConfigByRemote()
 	initConfig()
 	initLogger()
+	initPrometheus()
+	initOTLP()
 
 	app := InitWebService()
+	app.engine.ContextWithFallback = true
 
 	// 启动消费者
 	// 这里不够优雅，如果第一个消费者启动成功，后面的消费者失败，理论上应该让第一个消费则退出，go-zero有类似的实现
@@ -144,4 +157,71 @@ func InitConfigByRemote() {
 			fmt.Println(c)
 		}
 	}()
+}
+
+func initPrometheus() {
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":8081", nil)
+	}()
+}
+
+func initOTLP() func(ctx context.Context) {
+	res, err := newResource("demo", "v0.0.1")
+	if err != nil {
+		panic(err)
+	}
+
+	prop := newPropagator()
+	otel.SetTextMapPropagator(prop)
+
+	// 初始化 trace provider
+	// 这个 provider 就是用来在打点的时候构建 trace 的
+	tp, err := newTraceProvider(res)
+	if err != nil {
+		panic(err)
+	}
+	// 用完需要关闭
+	otel.SetTracerProvider(tp)
+	return func(ctx context.Context) {
+		tp.Shutdown(ctx)
+	}
+}
+
+// resource 代表系统或者模块的抽象
+func newResource(serviceName, serviceVersion string) (*resource.Resource, error) {
+	return resource.Merge(resource.Default(),
+		// SchemaURL 主要用于指定什么版本，照着抄就行不用管
+		resource.NewWithAttributes(semconv.SchemaURL,
+			semconv.ServiceName(serviceName),
+			semconv.ServiceVersion(serviceVersion),
+		))
+}
+
+// newPropagator 传播器，用于跨服务传播spanContext
+func newPropagator() propagation.TextMapPropagator {
+	return propagation.NewCompositeTextMapPropagator(
+	// propagation.TraceContext{}, // 用于传递分布式追踪的上下文信息，包括 Trace ID 和 Span ID
+	// propagation.Baggage{}, // 用于传递用户自定义的 baggage 数据
+	)
+}
+
+// newTraceProvider 用于指定 trace 真正的实现者
+func newTraceProvider(res *resource.Resource) (*trace.TracerProvider, error) {
+	// 这里使用 zipkin 的 exporter
+	// 还可以使用：jeager、skywalking
+	// 可以简单认为：zipkin 适配了 otel 的 API 所以代码层面我们使用的是 otel 的 API 实际上我们数据是上传到 zipkin
+	exporter, err := zipkin.New(
+		"http://localhost:9411/api/v2/spans")
+	if err != nil {
+		return nil, err
+	}
+
+	traceProvider := trace.NewTracerProvider(
+		trace.WithBatcher(exporter,
+			// Default is 5s. Set to 1s for demonstrative purposes.
+			trace.WithBatchTimeout(time.Second)),
+		trace.WithResource(res),
+	)
+	return traceProvider, nil
 }
