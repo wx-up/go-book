@@ -23,6 +23,8 @@ type ArticleService interface {
 	Detail(ctx context.Context, id int64) (domain.Article, error)
 
 	PublishedDetail(ctx context.Context, id int64) (domain.Article, error)
+
+	ListPub(ctx context.Context, offset, limit int64) ([]domain.Article, error)
 }
 
 type articleService struct {
@@ -30,6 +32,11 @@ type articleService struct {
 	producer events.Producer
 	l        logger.Logger
 	ch       chan readInfo
+}
+
+func (a *articleService) ListPub(ctx context.Context, offset, limit int64) ([]domain.Article, error) {
+	// TODO implement me
+	panic("implement me")
 }
 
 func NewArticleService(repo repository.ArticleRepository) ArticleService {

@@ -21,7 +21,7 @@ func NewService(svc sms.Service) *Service {
 	prd := otel.GetTracerProvider()
 	// tracer name 一般是 go mod 的名称+当前代码的相对路径
 	// 比如当前项目的 go mod 名称为 github.com/wx-up/go-book
-	// 当前代码的相对路径为 pkg/sms/opentelemetry
+	// 当前代码的相对路径为 pkg/sms/opentelemetry （ 目录层级 ）
 	// 所以整个 tracer name 为 github.com/wx-up/go-book/pkg/sms/opentelemetry
 	tracer := prd.Tracer("github.com/wx-up/go-book/pkg/sms/opentelemetry")
 	return &Service{

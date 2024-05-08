@@ -102,7 +102,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 					Uid: 10,
 				})
 			})
-			ah := NewArticleHandler(tc.mock(ctrl))
+			ah := NewArticleHandler(tc.mock(ctrl), nil, nil)
 			ah.RegisterRoutes(engine)
 			engine.ServeHTTP(recorder, req)
 			require.Equal(t, tc.wantCode, recorder.Code)

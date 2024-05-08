@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/wx-up/go-book/pkg/otelx"
+
 	"go.opentelemetry.io/otel/exporters/zipkin"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -31,7 +33,7 @@ import (
 	_ "github.com/spf13/viper/remote"
 )
 
-// 01:49:13
+// 00:14:16
 func main() {
 	// InitConfigByRemote()
 	initConfig()
@@ -182,7 +184,12 @@ func initOTLP() func(ctx context.Context) {
 		panic(err)
 	}
 	// 用完需要关闭
-	otel.SetTracerProvider(tp)
+	newTp := otelx.NewMyTraceProvider(tp)
+	otel.SetTracerProvider(newTp)
+	viper.OnConfigChange(func(in fsnotify.Event) {
+		// 检测配置文件的变化
+		newTp.Enabled.Store(viper.GetBool("otel.enabled"))
+	})
 	return func(ctx context.Context) {
 		tp.Shutdown(ctx)
 	}

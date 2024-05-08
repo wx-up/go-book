@@ -34,6 +34,8 @@ type ArticleRepository interface {
 	GetById(ctx context.Context, id int64) (domain.Article, error)
 	// GetPublishedById 获取线上库详情
 	GetPublishedById(ctx context.Context, id int64) (domain.Article, error)
+
+	ListPub(ctx context.Context, offset, limit int64) ([]domain.Article, error)
 }
 
 type CacheArticleRepository struct {
@@ -47,6 +49,11 @@ type CacheArticleRepository struct {
 	cache cache.ArticleCache
 
 	logger logger.Logger
+}
+
+func (c *CacheArticleRepository) ListPub(ctx context.Context, offset, limit int64) ([]domain.Article, error) {
+	// TODO implement me
+	panic("implement me")
 }
 
 func (c *CacheArticleRepository) GetPublishedById(ctx context.Context, id int64) (domain.Article, error) {

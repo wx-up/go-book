@@ -14,6 +14,8 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/robfig/cron/v3"
+
 	"golang.org/x/sync/errgroup"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -376,4 +378,61 @@ func Test_Context(t *testing.T) {
 
 func name() string {
 	return ""
+}
+
+func Test_Timer(t *testing.T) {
+	tm := time.NewTimer(time.Second)
+	defer tm.Stop()
+	for now := range tm.C {
+		t.Log(now.Unix())
+	}
+}
+
+func Test_Ticker(t *testing.T) {
+	tm := time.NewTicker(time.Second)
+	defer tm.Stop()
+	for now := range tm.C {
+		t.Log(now.Unix())
+	}
+}
+
+func TestTicker(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	ticker := time.NewTicker(time.Second)
+
+	// 不要忘记关闭，避免潜在的goroutine泄漏
+	defer ticker.Stop()
+
+	done := false
+	for !done {
+		select {
+		case now := <-ticker.C:
+			t.Log(now.Unix())
+		case <-ctx.Done():
+			fmt.Println("退出了")
+			done = true
+		}
+	}
+}
+
+func Test_Cron(t *testing.T) {
+	expr := cron.New(cron.WithSeconds())
+	// 线程安全
+	id, err := expr.AddFunc("@every 1s", func() {
+		t.Log("hello world")
+	})
+	require.NoError(t, err)
+	t.Log(id)
+
+	// 调用 start 之后开始调度任务
+	expr.Start()
+	time.Sleep(time.Second * 5)
+
+	// 调用 Stop 之后只是暂停了后续任务的调度
+	// 正在运行的任务会等待执行完成
+	ctx := expr.Stop()
+
+	// 等待正在运行的任务执行完成
+	<-ctx.Done()
 }

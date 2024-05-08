@@ -10,7 +10,9 @@ import (
 	"github.com/wx-up/go-book/internal/repository"
 )
 
-// InteractiveService 阅读服务
+// InteractiveService 互动服务
+//
+//go:generate mockgen -destination=./mocks/interactive_svc.mock.go -package=svcmocks -source=interactive_svc.go InteractiveService
 type InteractiveService interface {
 	// IncrReadCount 阅读计数
 	// biz 业务类型
@@ -26,10 +28,17 @@ type InteractiveService interface {
 
 	Liked(ctx context.Context, biz string, bid int64, uid int64) (bool, error)
 	Collected(ctx context.Context, biz string, bid int64, uid int64) (bool, error)
+
+	GetByIds(ctx context.Context, biz string, ids []int64) ([]domain.Interactive, error)
 }
 
 type interactiveService struct {
 	repo repository.InteractiveRepository
+}
+
+func (i *interactiveService) GetByIds(ctx context.Context, biz string, ids []int64) ([]domain.Interactive, error) {
+	// TODO implement me
+	panic("implement me")
 }
 
 func NewInteractiveService(repo repository.InteractiveRepository) InteractiveService {

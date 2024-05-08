@@ -79,7 +79,13 @@ services:
       - "9090:9090"
 
   zipkin:
-    # 这个镜像是不支持kafka之类的简化版本
+    # 这个镜像是不支持kafka之类的，它是简化版本
     image: openzipkin/zipkin-slim:2.24
     ports:
       - "9411:9411"
+
+  grafana:
+    # 也是有 slim 版本的，简化版本
+    image: grafana/grafana-enterprise:10.2.0
+    ports:
+      - "3000:3000"
