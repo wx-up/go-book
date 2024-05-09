@@ -25,6 +25,7 @@ var thirdSet = wire.NewSet(
 	wire.Bind(new(logger.Logger), new(*logger.ZapLogger)),
 )
 
+// userSvcSet 推荐使用 set 以业务维度进行组合
 var userSvcSet = wire.NewSet(
 	service.NewUserService,
 	repository.NewCacheUserRepository,

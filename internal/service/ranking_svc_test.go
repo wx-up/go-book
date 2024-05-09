@@ -28,7 +28,7 @@ func TestBatchRankingService_TopN(t *testing.T) {
 				artSvc := svcmocks.NewMockArticleService(ctrl)
 				// hacknews 模型受时间的影响，为了方便测试，这里将时间固定
 				// 这样子的话，点赞数越大，score 越大，文章排名越靠前
-				artSvc.EXPECT().ListPub(gomock.Any(), int64(0), int64(3)).Return(
+				artSvc.EXPECT().ListPub(gomock.Any(), gomock.Any(), int64(0), int64(3)).Return(
 					[]domain.Article{
 						{
 							Id:         1,
@@ -46,7 +46,7 @@ func TestBatchRankingService_TopN(t *testing.T) {
 							UpdateTime: now,
 						},
 					}, nil)
-				artSvc.EXPECT().ListPub(gomock.Any(), int64(3), int64(3)).Return(nil, nil)
+				artSvc.EXPECT().ListPub(gomock.Any(), gomock.Any(), int64(3), int64(3)).Return(nil, nil)
 				intSvc := svcmocks.NewMockInteractiveService(ctrl)
 				intSvc.EXPECT().GetByIds(gomock.Any(), "article", []int64{1, 2, 3}).Return(
 					[]domain.Interactive{
@@ -77,7 +77,7 @@ func TestBatchRankingService_TopN(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			artSvc, intSvc := tc.mock(ctrl)
-			svc := NewArticleRankingService(artSvc, intSvc)
+			svc := NewArticleRankingService(artSvc, intSvc, nil)
 			svc.batchSize = 3
 			svc.n = 3
 			svc.scoreFunc = func(t time.Time, likeCnt int64) float64 {

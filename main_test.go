@@ -433,6 +433,10 @@ func Test_Cron(t *testing.T) {
 	// 正在运行的任务会等待执行完成
 	ctx := expr.Stop()
 
-	// 等待正在运行的任务执行完成
-	<-ctx.Done()
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
+	defer cancel()
+	select {
+	case <-ctx.Done():
+	case <-timeoutCtx.Done():
+	}
 }

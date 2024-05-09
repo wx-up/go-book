@@ -16,10 +16,23 @@ type ReaderArticleDAO interface {
 
 	// GetById 获取线上库的文章详情
 	GetById(ctx context.Context, id int64) (model.PublishArticle, error)
+
+	ListPub(ctx context.Context, startTime time.Time, offset, limit int) ([]model.PublishArticle, error)
 }
 
 type GORMReaderArticleDAO struct {
 	p DBProvider
+}
+
+func (g *GORMReaderArticleDAO) ListPub(ctx context.Context, startTime time.Time, offset, limit int) ([]model.PublishArticle, error) {
+	res := make([]model.PublishArticle, 0, limit)
+	err := g.p().WithContext(ctx).
+		Where("update_time < ?", startTime.UnixMilli()).
+		Limit(limit).
+		Offset(offset).
+		Order("update_time DESC").
+		Find(&res).Error
+	return res, err
 }
 
 func (g *GORMReaderArticleDAO) GetById(ctx context.Context, id int64) (model.PublishArticle, error) {

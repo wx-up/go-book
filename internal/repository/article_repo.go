@@ -35,7 +35,7 @@ type ArticleRepository interface {
 	// GetPublishedById 获取线上库详情
 	GetPublishedById(ctx context.Context, id int64) (domain.Article, error)
 
-	ListPub(ctx context.Context, offset, limit int64) ([]domain.Article, error)
+	ListPub(ctx context.Context, startTime time.Time, offset, limit int) ([]domain.Article, error)
 }
 
 type CacheArticleRepository struct {
@@ -51,9 +51,14 @@ type CacheArticleRepository struct {
 	logger logger.Logger
 }
 
-func (c *CacheArticleRepository) ListPub(ctx context.Context, offset, limit int64) ([]domain.Article, error) {
-	// TODO implement me
-	panic("implement me")
+func (c *CacheArticleRepository) ListPub(ctx context.Context, startTime time.Time, offset, limit int) ([]domain.Article, error) {
+	objs, err := c.readerDAO.ListPub(ctx, startTime, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+	return slice.Map(objs, func(idx int, val model.PublishArticle) domain.Article {
+		return c.toDomain(val.Article)
+	}), nil
 }
 
 func (c *CacheArticleRepository) GetPublishedById(ctx context.Context, id int64) (domain.Article, error) {

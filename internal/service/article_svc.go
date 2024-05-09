@@ -24,7 +24,7 @@ type ArticleService interface {
 
 	PublishedDetail(ctx context.Context, id int64) (domain.Article, error)
 
-	ListPub(ctx context.Context, offset, limit int64) ([]domain.Article, error)
+	ListPub(ctx context.Context, startTime time.Time, offset, limit int64) ([]domain.Article, error)
 }
 
 type articleService struct {
@@ -34,7 +34,7 @@ type articleService struct {
 	ch       chan readInfo
 }
 
-func (a *articleService) ListPub(ctx context.Context, offset, limit int64) ([]domain.Article, error) {
+func (a *articleService) ListPub(ctx context.Context, startTime time.Time, offset, limit int64) ([]domain.Article, error) {
 	// TODO implement me
 	panic("implement me")
 }

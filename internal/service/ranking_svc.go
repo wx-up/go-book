@@ -2,9 +2,10 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"time"
+
+	"github.com/wx-up/go-book/internal/repository"
 
 	"github.com/ecodeclub/ekit/queue"
 
@@ -34,17 +35,24 @@ type ArticleRankingService struct {
 	n         int64
 
 	scoreFunc func(t time.Time, likeCnt int64) float64
+
+	repo repository.ArticleRankingRepo
 }
 
-func NewArticleRankingService(articleSvc ArticleService, interactiveSvc InteractiveService) *ArticleRankingService {
+func NewArticleRankingService(
+	articleSvc ArticleService,
+	interactiveSvc InteractiveService,
+	repo repository.ArticleRankingRepo,
+) *ArticleRankingService {
 	return &ArticleRankingService{
 		articleSvc:     articleSvc,
 		interactiveSvc: interactiveSvc,
 		batchSize:      100,
 		n:              100,
+		repo:           repo,
 		// hacknews 模型
 		scoreFunc: func(t time.Time, likeCnt int64) float64 {
-			return float64(likeCnt+1) / math.Pow(float64(time.Now().Unix()-t.Unix()+2), 1.5)
+			return float64(likeCnt+1) / math.Pow(time.Since(t).Seconds()+2, 1.5)
 		},
 	}
 }
@@ -57,8 +65,8 @@ func (b *ArticleRankingService) TopN(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(ids)
-	return nil
+	_ = ids
+	return b.repo.Set(ctx, nil)
 }
 
 // topN 对于这种复杂的函数，可以考虑 TDD，测试驱动编写
@@ -82,8 +90,9 @@ func (b *ArticleRankingService) topN(ctx context.Context) ([]int64, error) {
 
 	// 全量的文章计算热榜
 	// 这里其实考虑业务折中，比如7天之前的文章不进入文章热榜计算
+	now := time.Now()
 	for {
-		arts, err := b.articleSvc.ListPub(ctx, offset, b.batchSize)
+		arts, err := b.articleSvc.ListPub(ctx, now, offset, b.batchSize)
 		if err != nil {
 			return nil, err
 		}
@@ -129,6 +138,8 @@ func (b *ArticleRankingService) topN(ctx context.Context) ([]int64, error) {
 		}
 
 		// 一批没有取够，说明已经取完了
+		// 如果业务折中是7天之前的文章不进入文章热榜计算，这里增加一个或的判断条件 arts[len(arts)-1].Update 是否在7天之前即可
+		// 是的话，则 break
 		if len(arts) < int(b.batchSize) {
 			break
 		}
