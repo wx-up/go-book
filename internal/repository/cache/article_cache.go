@@ -17,12 +17,18 @@ type ArticleCache interface {
 	DelFirstPage(ctx context.Context, authorId int64) error
 
 	Set(ctx context.Context, obj domain.Article, expire time.Duration) error
+	Get(ctx context.Context, id int64) (domain.Article, error)
 
 	SetPub(ctx context.Context, obj domain.Article, expire time.Duration) error
 }
 
 type RedisArticleCache struct {
 	client redis.Cmdable
+}
+
+func (r *RedisArticleCache) Get(ctx context.Context, id int64) (domain.Article, error) {
+	// TODO implement me
+	panic("implement me")
 }
 
 func (r *RedisArticleCache) SetPub(ctx context.Context, obj domain.Article, expire time.Duration) error {

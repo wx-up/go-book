@@ -18,6 +18,8 @@ type RankingService interface {
 	// TopN 默认取排名100的文章
 	TopN(ctx context.Context) error
 
+	Preload(ctx context.Context) error
+
 	// 接口定义上可以将 N 的值由调用来指定
 	// TopN(ctx context.Context, n int64) error
 	// 因为 top 的文章数据是存储在 redis 中，因此可以不返回 []domain.Article 但是为了方便测试，还是可以考虑返回 []domain.Article
@@ -37,6 +39,11 @@ type ArticleRankingService struct {
 	scoreFunc func(t time.Time, likeCnt int64) float64
 
 	repo repository.ArticleRankingRepo
+}
+
+func (b *ArticleRankingService) Preload(ctx context.Context) error {
+	// TODO implement me
+	panic("implement me")
 }
 
 func NewArticleRankingService(

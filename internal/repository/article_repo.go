@@ -79,8 +79,22 @@ func (c *CacheArticleRepository) GetPublishedById(ctx context.Context, id int64)
 }
 
 func (c *CacheArticleRepository) GetById(ctx context.Context, id int64) (domain.Article, error) {
-	// TODO implement me
-	panic("implement me")
+	res, err := c.cache.Get(ctx, id)
+	if err == nil {
+		return res, nil
+	}
+	art, err := c.dao.GetById(ctx, id)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	res = c.toDomain(art)
+	go func() {
+		er := c.cache.Set(ctx, res, time.Second*30)
+		if er != nil {
+			// 记录日志
+		}
+	}()
+	return res, nil
 }
 
 func (c *CacheArticleRepository) GetByAuthorId(ctx context.Context, authorId int64, page, pageSize int64) ([]domain.Article, error) {
