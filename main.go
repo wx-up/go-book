@@ -33,7 +33,7 @@ import (
 	_ "github.com/spf13/viper/remote"
 )
 
-// 00:26:00
+// 02:59:00
 func main() {
 	// InitConfigByRemote()
 	initConfig()

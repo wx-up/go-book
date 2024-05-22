@@ -13,6 +13,7 @@ type Article struct {
 
 	Inter Interactive
 }
+
 type Author struct {
 	Id   int64
 	Name string

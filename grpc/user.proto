@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+option go_package = "github.com/wx-up/go-book/grpc";
+
+message User {
+  int64  id = 1;
+  string name = 2;
+  string avatar = 3;
+  Gender gender = 4;
+
+  oneof contact {
+    string email = 5;
+    string phone = 6;
+  }
+}
+
+
+enum Gender {
+  Unknown = 0;
+  Male = 1;
+  Female = 2;
+}
+
+
+service UserService {
+  rpc CreateUser (CreateUserRequest) returns (CreateUserResponse) {}
+}
+
+
+message CreateUserRequest {
+
+}
+
+
+message CreateUserResponse {
+
+}
