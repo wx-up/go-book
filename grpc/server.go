@@ -1,12 +1,15 @@
 package grpc
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 type Server struct {
 	UnimplementedUserServiceServer
 }
 
 func (s *Server) CreateUser(ctx context.Context, request *CreateUserRequest) (*CreateUserResponse, error) {
-	// TODO implement me
-	panic("implement me")
+	fmt.Println("我收到了")
+	return &CreateUserResponse{}, nil
 }
