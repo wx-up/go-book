@@ -2,155 +2,158 @@ package repository
 
 import (
 	"context"
-	"time"
-
-	"github.com/wx-up/go-book/internal/repository/dao/model"
-
+	"errors"
+	"github.com/ecodeclub/ekit/slice"
 	"github.com/wx-up/go-book/internal/domain"
-
-	"github.com/wx-up/go-book/pkg/logger"
-
 	"github.com/wx-up/go-book/internal/repository/cache"
-
 	"github.com/wx-up/go-book/internal/repository/dao"
+	"github.com/wx-up/go-book/pkg/logger"
 )
 
 type InteractiveRepository interface {
-	IncrReadCnt(ctx context.Context, biz string, bizID int64) error
-
-	// BatchIncrReadCnt 批量增加阅读数
-	// 如果 biz 和 bid 都是一样的，可以设计成 IncrReadCntN(ctx context.Context, biz string, bizID int64,delay int64) error
-	BatchIncrReadCnt(ctx context.Context, biz string, bizIDs []int64) error
-
-	// IncrLikeCnt 增加点赞数
-	IncrLikeCnt(ctx context.Context, biz string, bizID int64, uid int64) error
-	// DecrLikeCnt 取消点赞
-	DecrLikeCnt(ctx context.Context, biz string, bizID int64, uid int64) error
-
-	// AddCollectionItem 收藏
-	// cid 为 0 时表示用户的默认收藏夹
-	AddCollectionItem(ctx context.Context, biz string, bizID int64, cid int64, uid int64) error
-
-	// Get  获取某个业务资源的点赞、收藏、阅读
-	Get(ctx context.Context, biz string, bizID int64) (domain.Interactive, error)
-	// Liked 文章是否被点赞
-	Liked(ctx context.Context, biz string, bid int64, uid int64) (bool, error)
-	// Collected 文章是否被收藏
-	Collected(ctx context.Context, biz string, bid int64, uid int64) (bool, error)
+	IncrReadCnt(ctx context.Context, biz string, bizId int64) error
+	// BatchIncrReadCnt biz 和 bizId 长度必须一致
+	BatchIncrReadCnt(ctx context.Context, biz []string, bizId []int64) error
+	IncrLike(ctx context.Context, biz string, id int64, uid int64) error
+	DecrLike(ctx context.Context, biz string, id int64, uid int64) error
+	AddCollectionItem(ctx context.Context, biz string, id int64, cid int64, uid int64) error
+	Get(ctx context.Context, biz string, id int64) (domain.Interactive, error)
+	Liked(ctx context.Context, biz string, id int64, uid int64) (bool, error)
+	Collected(ctx context.Context, biz string, id int64, uid int64) (bool, error)
+	GetByIds(ctx context.Context, biz string, ids []int64) ([]domain.Interactive, error)
 }
 
-type CacheInteractiveRepository struct {
-	dao   dao.InteractiveDao
+type CachedInteractiveRepository struct {
+	dao   dao.InteractiveDAO
 	cache cache.InteractiveCache
 	l     logger.Logger
 }
 
-func (c *CacheInteractiveRepository) BatchIncrReadCnt(ctx context.Context, biz string, bizIDs []int64) error {
-	// TODO implement me
-	panic("implement me")
+func NewCachedInteractiveRepository(dao dao.InteractiveDAO,
+	cache cache.InteractiveCache) InteractiveRepository {
+	return &CachedInteractiveRepository{dao: dao, cache: cache}
 }
 
-func NewCacheInteractiveRepository(dao dao.InteractiveDao, cache cache.InteractiveCache, l logger.Logger) *CacheInteractiveRepository {
-	return &CacheInteractiveRepository{
-		dao:   dao,
-		cache: cache,
-		l:     l,
+func (c *CachedInteractiveRepository) GetByIds(ctx context.Context, biz string, ids []int64) ([]domain.Interactive, error) {
+	intrs, err := c.dao.GetByIds(ctx, biz, ids)
+	if err != nil {
+		return nil, err
 	}
+	return slice.Map(intrs, func(idx int, src dao.Interactive) domain.Interactive {
+		return c.toDomain(src)
+	}), nil
 }
 
-func (c *CacheInteractiveRepository) DecrLikeCnt(ctx context.Context, biz string, bizID int64, uid int64) error {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (c *CacheInteractiveRepository) AddCollectionItem(ctx context.Context, biz string, bizID int64, cid int64, uid int64) error {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (c *CacheInteractiveRepository) Get(ctx context.Context, biz string, bizID int64) (domain.Interactive, error) {
-	cacheRes, err := c.cache.Get(ctx, biz, bizID)
+func (c *CachedInteractiveRepository) Get(ctx context.Context, biz string, id int64) (domain.Interactive, error) {
+	intr, err := c.cache.Get(ctx, biz, id)
 	if err == nil {
-		return cacheRes, nil
+		return intr, nil
 	}
-	// 查询数据库
-	res, err := c.dao.Get(ctx, biz, bizID)
+	ie, err := c.dao.Get(ctx, biz, id)
 	if err != nil {
 		return domain.Interactive{}, err
 	}
+	if err == nil {
+		res := c.toDomain(ie)
+		err = c.cache.Set(ctx, biz, id, res)
+		if err != nil {
+			c.l.Error("回写缓存失败",
+				logger.String("biz", biz),
+				logger.Int64("bizId", id),
+				logger.Error(err))
+		}
+		return res, nil
+	}
+	return intr, err
+}
 
-	inter := c.toDomain(res)
+func (c *CachedInteractiveRepository) Liked(ctx context.Context,
+	biz string, id int64, uid int64) (bool, error) {
+	_, err := c.dao.GetLikeInfo(ctx, biz, id, uid)
+	switch {
+	case err == nil:
+		return true, nil
+	case errors.Is(err, dao.ErrRecordNotFound):
+		return false, nil
+	default:
+		return false, err
+	}
+}
 
-	// 设置缓存
+func (c *CachedInteractiveRepository) Collected(ctx context.Context,
+	biz string, id int64, uid int64) (bool, error) {
+	_, err := c.dao.GetCollectInfo(ctx, biz, id, uid)
+	switch {
+	case err == nil:
+		return true, nil
+	case errors.Is(err, dao.ErrRecordNotFound):
+		return false, nil
+	default:
+		return false, err
+	}
+}
+
+func (c *CachedInteractiveRepository) AddCollectionItem(ctx context.Context,
+	biz string, id int64, cid int64, uid int64) error {
+	obj := dao.UserCollectionBiz{}
+	obj.Biz = biz
+	obj.BizId = id
+	obj.Cid = cid
+	obj.Uid = uid
+	err := c.dao.InsertCollectionBiz(ctx, obj)
+	if err != nil {
+		return err
+	}
+	return c.cache.IncrCollectCntIfPresent(ctx, biz, id)
+}
+
+func (c *CachedInteractiveRepository) IncrLike(ctx context.Context, biz string, id int64, uid int64) error {
+	err := c.dao.InsertLikeInfo(ctx, biz, id, uid)
+	if err != nil {
+		return err
+	}
+	return c.cache.IncrLikeCntIfPresent(ctx, biz, id)
+}
+
+func (c *CachedInteractiveRepository) DecrLike(ctx context.Context, biz string, id int64, uid int64) error {
+	err := c.dao.DeleteLikeInfo(ctx, biz, id, uid)
+	if err != nil {
+		return err
+	}
+	return c.cache.DecrLikeCntIfPresent(ctx, biz, id)
+}
+
+func (c *CachedInteractiveRepository) BatchIncrReadCnt(ctx context.Context, biz []string, bizId []int64) error {
+	err := c.dao.BatchIncrReadCnt(ctx, biz, bizId)
+	if err != nil {
+		return err
+	}
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		if err = c.cache.Set(ctx, biz, bizID, inter); err != nil {
-			// 记录日志
+		for i := 0; i < len(biz); i++ {
+			er := c.cache.IncrReadCntIfPresent(ctx, biz[i], bizId[i])
+			if er != nil {
+				// 记录日志
+			}
 		}
 	}()
-
-	return inter, nil
-}
-
-func (c *CacheInteractiveRepository) toDomain(res model.Interactive) domain.Interactive {
-	return domain.Interactive{}
-}
-
-func (c *CacheInteractiveRepository) Liked(ctx context.Context, biz string, bid int64, uid int64) (bool, error) {
-	_, err := c.dao.GetLikeInfo(ctx, model.UserLikeBiz{
-		Uid:   uid,
-		BizId: bid,
-		Biz:   biz,
-	})
-	switch err {
-	case nil:
-		return true, nil
-	case dao.ErrInteractiveLikedNotFound:
-		return false, nil
-	default:
-		return false, err
-	}
-}
-
-func (c *CacheInteractiveRepository) Collected(ctx context.Context, biz string, bid int64, uid int64) (bool, error) {
-	_, err := c.dao.GetCollectionInfo(ctx, model.UserCollectionBiz{
-		Uid:   uid,
-		BizId: bid,
-		Biz:   biz,
-	})
-	switch err {
-	case nil:
-		return true, nil
-	case dao.ErrInteractiveCollectedNotFound:
-		return false, nil
-	default:
-		return false, err
-	}
-}
-
-func (c *CacheInteractiveRepository) IncrLikeCnt(ctx context.Context, biz string, bizID int64, uid int64) error {
-	err := c.dao.InsertLikeInfo(ctx, biz, bizID, uid)
-	if err != nil {
-		return err
-	}
-
-	// 缓存更新
-	if err := c.cache.IncrLikeCntIfPresent(ctx, biz, bizID); err != nil {
-		c.l.Error("【缓存】点赞数增加失败", logger.Error(err))
-	}
 	return nil
 }
 
-func (c *CacheInteractiveRepository) IncrReadCnt(ctx context.Context, biz string, bizID int64) error {
-	// 更新数据库
-	err := c.dao.IncrReadCnt(ctx, biz, bizID)
+func (c *CachedInteractiveRepository) IncrReadCnt(ctx context.Context, biz string, bizId int64) error {
+	err := c.dao.IncrReadCnt(ctx, biz, bizId)
 	if err != nil {
 		return err
 	}
-	// 再更新缓存
-	if err := c.cache.IncrReadCntIfPresent(ctx, biz, bizID); err != nil {
-		c.l.Error("【缓存】阅读数增加失败", logger.Error(err))
+	// 你要更新缓存了
+	// 部分失败问题 —— 数据不一致
+	return c.cache.IncrReadCntIfPresent(ctx, biz, bizId)
+}
+
+func (c *CachedInteractiveRepository) toDomain(ie dao.Interactive) domain.Interactive {
+	return domain.Interactive{
+		BizId:      ie.BizId,
+		ReadCnt:    ie.ReadCnt,
+		LikeCnt:    ie.LikeCnt,
+		CollectCnt: ie.CollectCnt,
 	}
-	return nil
 }

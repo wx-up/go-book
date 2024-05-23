@@ -31,10 +31,9 @@ type ArticleHandler struct {
 	l       logger.Logger
 }
 
-func NewArticleHandler(svc service.ArticleService, l logger.Logger, incrSvc service.InteractiveService) *ArticleHandler {
+func NewArticleHandler(svc service.ArticleService, incrSvc service.InteractiveService) *ArticleHandler {
 	return &ArticleHandler{
 		svc:     svc,
-		l:       l,
 		incrSvc: incrSvc,
 	}
 }

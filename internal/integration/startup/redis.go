@@ -15,7 +15,7 @@ var (
 func InitTestRedis() redis.Cmdable {
 	redisClientOnce.Do(func() {
 		redisClient = redis.NewClient(&redis.Options{
-			Addr: "localhost:7379",
+			Addr: "localhost:6379",
 		})
 		if err := redisClient.Ping(context.Background()).Err(); err != nil {
 			panic(err)

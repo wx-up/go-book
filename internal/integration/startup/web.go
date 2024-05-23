@@ -59,3 +59,9 @@ var JWTHandlerSet = wire.NewSet(
 	wire.Bind(new(jwt.Handler), new(*jwt.RedisJwtHandler)),
 	jwt.NewRedisJwtHandler,
 )
+
+var interactiveSvcSet = wire.NewSet(dao.NewGORMInteractiveDAO,
+	cache.NewInteractiveRedisCache,
+	repository.NewCachedInteractiveRepository,
+	service.NewInteractiveService,
+)

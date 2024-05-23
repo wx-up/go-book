@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/wx-up/go-book/internal/repository"
 	"github.com/wx-up/go-book/internal/repository/cache"
+	"github.com/wx-up/go-book/internal/repository/dao"
 	"github.com/wx-up/go-book/internal/service"
 	"github.com/wx-up/go-book/internal/service/code"
 	"github.com/wx-up/go-book/internal/web"
@@ -39,7 +40,11 @@ func InitWebService() *gin.Engine {
 	articleDAO := CreateArticleDAO(db)
 	cacheArticleRepository := repository.NewCacheArticleRepository(articleDAO)
 	articleService := service.NewArticleService(cacheArticleRepository)
-	articleHandler := web.NewArticleHandler(articleService)
+	interactiveDAO := dao.NewGORMInteractiveDAO(db)
+	interactiveCache := cache.NewInteractiveRedisCache(cmdable)
+	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
+	interactiveService := service.NewInteractiveService(interactiveRepository)
+	articleHandler := web.NewArticleHandler(articleService, interactiveService)
 	engine := ioc.InitWeb(v, userHandler, oAuth2WechatHandler, articleHandler)
 	return engine
 }
@@ -49,6 +54,21 @@ func CreateArticleHandler() *web.ArticleHandler {
 	articleDAO := CreateArticleDAO(db)
 	cacheArticleRepository := repository.NewCacheArticleRepository(articleDAO)
 	articleService := service.NewArticleService(cacheArticleRepository)
-	articleHandler := web.NewArticleHandler(articleService)
+	interactiveDAO := dao.NewGORMInteractiveDAO(db)
+	cmdable := InitTestRedis()
+	interactiveCache := cache.NewInteractiveRedisCache(cmdable)
+	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
+	interactiveService := service.NewInteractiveService(interactiveRepository)
+	articleHandler := web.NewArticleHandler(articleService, interactiveService)
 	return articleHandler
+}
+
+func InitInteractiveService() service.InteractiveService {
+	db := InitTestMysql()
+	interactiveDAO := dao.NewGORMInteractiveDAO(db)
+	cmdable := InitTestRedis()
+	interactiveCache := cache.NewInteractiveRedisCache(cmdable)
+	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
+	interactiveService := service.NewInteractiveService(interactiveRepository)
+	return interactiveService
 }

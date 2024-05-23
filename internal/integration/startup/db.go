@@ -18,7 +18,7 @@ var (
 func InitTestMysql() *gorm.DB {
 	dbOnce.Do(func() {
 		db, err := gorm.Open(mysql.New(mysql.Config{
-			DSN: "root:root@tcp(localhost:13316)/go_book",
+			DSN: "root:root@tcp(localhost:3306)/go_book",
 		}), &gorm.Config{})
 		if err != nil {
 			panic(err)

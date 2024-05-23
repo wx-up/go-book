@@ -49,7 +49,7 @@ func (k *BatchReadEventKafkaConsumer) Consume(message []*sarama.ConsumerMessage,
 	for _, m := range t {
 		ids = append(ids, m.Aid)
 	}
-	err := k.repo.BatchIncrReadCnt(ctx, "articles", ids)
+	err := k.repo.BatchIncrReadCnt(ctx, []string{"articles"}, ids)
 	if err != nil {
 		// 记录日志
 	}
