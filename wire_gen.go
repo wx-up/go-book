@@ -8,7 +8,11 @@ package main
 
 import (
 	"github.com/google/wire"
-	"github.com/wx-up/go-book/internal/events/articles"
+	"github.com/wx-up/go-book/interactive/events/articles"
+	repository2 "github.com/wx-up/go-book/interactive/repository"
+	cache2 "github.com/wx-up/go-book/interactive/repository/cache"
+	dao2 "github.com/wx-up/go-book/interactive/repository/dao"
+	service2 "github.com/wx-up/go-book/interactive/service"
 	"github.com/wx-up/go-book/internal/repository"
 	"github.com/wx-up/go-book/internal/repository/cache"
 	"github.com/wx-up/go-book/internal/repository/dao"
@@ -46,15 +50,15 @@ func InitWebService() *App {
 	gormArticleDAO := dao.NewGORMArticleDAO(dbProvider)
 	cacheArticleRepository := repository.NewCacheArticleRepository(gormArticleDAO)
 	articleService := service.NewArticleService(cacheArticleRepository)
-	loggerZapLogger := logger.NewZapLogger(zapLogger)
-	gormInteractiveDao := dao.NewGORMInteractiveDAO(db)
-	redisInteractiveCache := cache.NewInteractiveRedisCache(cmdable)
-	cacheInteractiveRepository := repository.NewCachedInteractiveRepository(gormInteractiveDao, redisInteractiveCache)
-	interactiveService := service.NewInteractiveService(cacheInteractiveRepository)
+	interactiveDAO := dao2.NewGORMInteractiveDAO(db)
+	interactiveCache := cache2.NewInteractiveRedisCache(cmdable)
+	interactiveRepository := repository2.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
+	interactiveService := service2.NewInteractiveService(interactiveRepository)
 	articleHandler := web.NewArticleHandler(articleService, interactiveService)
 	engine := ioc.InitWeb(v, userHandler, oAuth2WechatHandler, articleHandler)
+	loggerZapLogger := logger.NewZapLogger(zapLogger)
 	client := ioc.InitKafka()
-	readEventKafkaConsumer := article.NewReadEventKafkaConsumer(loggerZapLogger, cacheInteractiveRepository, client)
+	readEventKafkaConsumer := articles.NewReadEventKafkaConsumer(loggerZapLogger, interactiveRepository, client)
 	v2 := ioc.CreateConsumers(readEventKafkaConsumer)
 	app := &App{
 		engine: engine,
@@ -67,6 +71,7 @@ func InitWebService() *App {
 
 var thirdSet = wire.NewSet(ioc.CreateRedis, ioc.CreateMysql, ioc.CreateJwtHandler, ioc.CreateDBProvider, logger.NewZapLogger, ioc.CreateLogger, wire.Bind(new(logger.Logger), new(*logger.ZapLogger)))
 
+// userSvcSet 推荐使用 set 以业务维度进行组合
 var userSvcSet = wire.NewSet(service.NewUserService, repository.NewCacheUserRepository, dao.NewGORMUserDAO, cache.NewRedisUserCache)
 
 var codeSvcSet = wire.NewSet(code.NewSmsCodeService, ioc.CreateSMSService, repository.NewCacheCodeRepository, cache.NewRedisCodeCache)
@@ -75,4 +80,4 @@ var userHandlerSet = wire.NewSet(web.NewUserHandler)
 
 var wechatHandlerSet = wire.NewSet(web.NewOAuth2WechatHandler, ioc.CreateOAuth2WechatService)
 
-var articleHandlerSet = wire.NewSet(web.NewArticleHandler, service.NewArticleService, service.NewInteractiveService, wire.Bind(new(repository.ArticleRepository), new(*repository.CacheArticleRepository)), repository.NewCacheArticleRepository, repository.NewCachedInteractiveRepository, wire.Bind(new(repository.InteractiveRepository), new(*repository.CachedInteractiveRepository)), dao.NewGORMInteractiveDAO, wire.Bind(new(dao.InteractiveDAO), new(*dao.GORMInteractiveDAO)), wire.Bind(new(dao.ArticleDAO), new(*dao.GORMArticleDAO)), dao.NewGORMArticleDAO, cache.NewInteractiveRedisCache, wire.Bind(new(cache.InteractiveCache), new(*cache.InteractiveRedisCache)))
+var articleHandlerSet = wire.NewSet(web.NewArticleHandler, service.NewArticleService, service2.NewInteractiveService, repository2.NewCachedInteractiveRepository, dao2.NewGORMInteractiveDAO, cache2.NewInteractiveRedisCache, wire.Bind(new(repository.ArticleRepository), new(*repository.CacheArticleRepository)), repository.NewCacheArticleRepository, wire.Bind(new(dao.ArticleDAO), new(*dao.GORMArticleDAO)), dao.NewGORMArticleDAO)

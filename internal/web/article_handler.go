@@ -2,6 +2,8 @@ package web
 
 import (
 	"fmt"
+	domain2 "github.com/wx-up/go-book/interactive/domain"
+	service2 "github.com/wx-up/go-book/interactive/service"
 	"net/http"
 	"strconv"
 	"time"
@@ -27,11 +29,11 @@ var _ handler = (*ArticleHandler)(nil)
 
 type ArticleHandler struct {
 	svc     service.ArticleService
-	incrSvc service.InteractiveService
+	incrSvc service2.InteractiveService
 	l       logger.Logger
 }
 
-func NewArticleHandler(svc service.ArticleService, incrSvc service.InteractiveService) *ArticleHandler {
+func NewArticleHandler(svc service.ArticleService, incrSvc service2.InteractiveService) *ArticleHandler {
 	return &ArticleHandler{
 		svc:     svc,
 		incrSvc: incrSvc,
@@ -70,7 +72,7 @@ func (h *ArticleHandler) PublishedDetail(ctx *gin.Context, claims jwt.UserClaim)
 		detail, err = h.svc.PublishedDetail(ctx, id)
 		return err
 	})
-	var inter domain.Interactive
+	var inter domain2.Interactive
 	eg.Go(func() error {
 		inter, err = h.incrSvc.Get(ctx, "articles", detail.Id, claims.Uid)
 		// 容错

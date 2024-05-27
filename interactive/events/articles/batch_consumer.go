@@ -1,11 +1,11 @@
-package article
+package articles
 
 import (
 	"context"
+	"github.com/wx-up/go-book/interactive/repository"
 	"time"
 
 	"github.com/IBM/sarama"
-	"github.com/wx-up/go-book/internal/repository"
 	"github.com/wx-up/go-book/pkg/logger"
 	"github.com/wx-up/go-book/pkg/saramax"
 )

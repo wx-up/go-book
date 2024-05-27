@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	domain2 "github.com/wx-up/go-book/interactive/domain"
+	"github.com/wx-up/go-book/interactive/service"
 	"testing"
 	"time"
 
@@ -18,13 +20,13 @@ func TestBatchRankingService_TopN(t *testing.T) {
 	now := time.Now()
 	testCases := []struct {
 		name    string
-		mock    func(ctrl *gomock.Controller) (ArticleService, InteractiveService)
+		mock    func(ctrl *gomock.Controller) (ArticleService, service.InteractiveService)
 		wantErr error
 		wanRes  []int64
 	}{
 		{
 			name: "计算成功",
-			mock: func(ctrl *gomock.Controller) (ArticleService, InteractiveService) {
+			mock: func(ctrl *gomock.Controller) (ArticleService, service.InteractiveService) {
 				artSvc := svcmocks.NewMockArticleService(ctrl)
 				// hacknews 模型受时间的影响，为了方便测试，这里将时间固定
 				// 这样子的话，点赞数越大，score 越大，文章排名越靠前
@@ -49,7 +51,7 @@ func TestBatchRankingService_TopN(t *testing.T) {
 				artSvc.EXPECT().ListPub(gomock.Any(), gomock.Any(), int64(3), int64(3)).Return(nil, nil)
 				intSvc := svcmocks.NewMockInteractiveService(ctrl)
 				intSvc.EXPECT().GetByIds(gomock.Any(), "article", []int64{1, 2, 3}).Return(
-					[]domain.Interactive{
+					[]domain2.Interactive{
 						{
 							BizId:   1,
 							LikeCnt: 10,
@@ -65,7 +67,7 @@ func TestBatchRankingService_TopN(t *testing.T) {
 					},
 					nil)
 				intSvc.EXPECT().GetByIds(gomock.Any(), "article", []int64{}).Return(nil, nil)
-				return artSvc, intSvc
+				return artSvc, nil
 			},
 			wantErr: nil,
 			wanRes:  []int64{2, 3, 1},

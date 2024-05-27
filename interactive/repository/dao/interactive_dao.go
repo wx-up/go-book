@@ -2,11 +2,13 @@ package dao
 
 import (
 	"context"
-	"github.com/wx-up/go-book/internal/repository/dao/model"
+	"github.com/wx-up/go-book/interactive/repository/dao/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"time"
 )
+
+var ErrRecordNotFound = gorm.ErrRecordNotFound
 
 type InteractiveDAO interface {
 	IncrReadCnt(ctx context.Context, biz string, bizId int64) error

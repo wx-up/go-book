@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	domain2 "github.com/wx-up/go-book/interactive/domain"
+	"github.com/wx-up/go-book/interactive/service"
 	"math"
 	"time"
 
@@ -31,7 +33,7 @@ type ArticleRankingService struct {
 	// 单体服务可以考虑组合 repository 而不是 svc
 	// 这里将 BatchRankingService 当作聚合服务来定位，因此组合了 svc
 	articleSvc     ArticleService
-	interactiveSvc InteractiveService
+	interactiveSvc service.InteractiveService
 
 	batchSize int64
 	n         int64
@@ -48,7 +50,7 @@ func (b *ArticleRankingService) Preload(ctx context.Context) error {
 
 func NewArticleRankingService(
 	articleSvc ArticleService,
-	interactiveSvc InteractiveService,
+	interactiveSvc service.InteractiveService,
 	repo repository.ArticleRankingRepo,
 ) *ArticleRankingService {
 	return &ArticleRankingService{
@@ -113,7 +115,7 @@ func (b *ArticleRankingService) topN(ctx context.Context) ([]int64, error) {
 		}
 
 		// 转成 map 方便查找
-		idInterMap := make(map[int64]domain.Interactive)
+		idInterMap := make(map[int64]domain2.Interactive)
 		for _, inter := range inters {
 			idInterMap[inter.BizId] = inter
 		}

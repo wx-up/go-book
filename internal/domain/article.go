@@ -1,6 +1,8 @@
 package domain
 
-import "time"
+import (
+	"time"
+)
 
 type Article struct {
 	Id         int64
@@ -10,8 +12,6 @@ type Article struct {
 	Status     ArticleStatus
 	CreateTime time.Time
 	UpdateTime time.Time
-
-	Inter Interactive
 }
 
 type Author struct {

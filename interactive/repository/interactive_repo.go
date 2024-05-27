@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"github.com/ecodeclub/ekit/slice"
-	"github.com/wx-up/go-book/internal/domain"
-	"github.com/wx-up/go-book/internal/repository/cache"
-	"github.com/wx-up/go-book/internal/repository/dao"
+	"github.com/wx-up/go-book/interactive/domain"
+	"github.com/wx-up/go-book/interactive/repository/cache"
+	"github.com/wx-up/go-book/interactive/repository/dao"
 	"github.com/wx-up/go-book/pkg/logger"
 )
 

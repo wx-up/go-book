@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"github.com/wx-up/go-book/internal/domain"
-	"github.com/wx-up/go-book/internal/repository"
+	"github.com/wx-up/go-book/interactive/domain"
+	"github.com/wx-up/go-book/interactive/repository"
 	"golang.org/x/sync/errgroup"
 )
 

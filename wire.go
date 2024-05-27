@@ -4,7 +4,11 @@ package main
 
 import (
 	"github.com/google/wire"
-	article "github.com/wx-up/go-book/internal/events/articles"
+	article "github.com/wx-up/go-book/interactive/events/articles"
+	repository2 "github.com/wx-up/go-book/interactive/repository"
+	cache2 "github.com/wx-up/go-book/interactive/repository/cache"
+	dao2 "github.com/wx-up/go-book/interactive/repository/dao"
+	service2 "github.com/wx-up/go-book/interactive/service"
 	"github.com/wx-up/go-book/internal/repository"
 	"github.com/wx-up/go-book/internal/repository/cache"
 	"github.com/wx-up/go-book/internal/repository/dao"
@@ -52,17 +56,19 @@ var wechatHandlerSet = wire.NewSet(
 var articleHandlerSet = wire.NewSet(
 	web.NewArticleHandler,
 	service.NewArticleService,
-	service.NewInteractiveService,
+	service2.NewInteractiveService,
+	repository2.NewCachedInteractiveRepository,
+	dao2.NewGORMInteractiveDAO,
+	cache2.NewInteractiveRedisCache,
 	wire.Bind(new(repository.ArticleRepository), new(*repository.CacheArticleRepository)),
 	repository.NewCacheArticleRepository,
-	repository.NewCacheInteractiveRepository,
-	wire.Bind(new(repository.InteractiveRepository), new(*repository.CacheInteractiveRepository)),
-	dao.NewGORMInteractiveDao,
-	wire.Bind(new(dao.InteractiveDao), new(*dao.GORMInteractiveDao)),
+	//wire.Bind(new(repository2.InteractiveRepository), new(*repository2.CachedInteractiveRepository)),
+	//repository2.NewCachedInteractiveRepository,
+	//wire.Bind(new(dao2.InteractiveDAO), new(*dao2.GORMInteractiveDAO)),
+	//dao2.NewGORMInteractiveDAO,
 	wire.Bind(new(dao.ArticleDAO), new(*dao.GORMArticleDAO)),
 	dao.NewGORMArticleDAO,
-	cache.NewRedisInteractiveCache,
-	wire.Bind(new(cache.InteractiveCache), new(*cache.RedisInteractiveCache)),
+	//cache2.NewInteractiveRedisCache,
 )
 
 func InitWebService() *App {

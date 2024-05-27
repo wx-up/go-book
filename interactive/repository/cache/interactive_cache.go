@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/redis/go-redis/v9"
-	"github.com/wx-up/go-book/internal/domain"
+	"github.com/wx-up/go-book/interactive/domain"
 	"strconv"
 	"time"
 )
+
+var ErrKeyNotExist = fmt.Errorf("key not exist")
 
 var (
 	//go:embed lua/interactive_incr_cnt.lua
@@ -101,7 +103,7 @@ func (i *InteractiveRedisCache) key(biz string, bizId int64) string {
 	return fmt.Sprintf("interactive:%s:%d", biz, bizId)
 }
 
-func (r *InteractiveRedisCache) wrapRes(handle func() (int64, error)) error {
+func (i *InteractiveRedisCache) wrapRes(handle func() (int64, error)) error {
 	res, err := handle()
 	if err != nil {
 		return err
