@@ -95,6 +95,7 @@ func (a *ArticleRankingJob) Run() error {
 		}()
 
 	}
+	a.localLock.Unlock()
 
 	ctx, cancel := context.WithTimeout(context.Background(), a.timeout)
 	defer cancel()

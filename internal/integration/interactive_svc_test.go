@@ -23,7 +23,7 @@ func (s *InteractiveTestSuite) SetupSuite() {
 	s.rdb = startup.InitTestRedis()
 }
 
-func (s *InteractiveTestSuite) TearDownSuite() {
+func (s *InteractiveTestSuite) TearDownTest() {
 	err := s.db.Exec("TRUNCATE TABLE `interactives`").Error
 	assert.NoError(s.T(), err)
 	err = s.db.Exec("TRUNCATE TABLE `user_like_bizs`").Error

@@ -440,3 +440,29 @@ func Test_Cron(t *testing.T) {
 	case <-timeoutCtx.Done():
 	}
 }
+
+func Test_Multi_Channel(t *testing.T) {
+	ch1 := make(chan int, 10)
+	ch2 := make(chan int, 10)
+	go func() {
+		for {
+			num := 10
+			select {
+			case ch1 <- num:
+			default:
+				ch2 <- num
+			}
+		}
+	}()
+
+	go func() {
+		for {
+			num := 10
+			select {
+			case ch2 <- num:
+			default:
+				ch1 <- num
+			}
+		}
+	}()
+}
