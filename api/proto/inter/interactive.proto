@@ -1,0 +1,43 @@
+syntax="proto3";
+
+// buf:lint:ignore PACKAGE_VERSION_SUFFIX
+package inter;
+
+option go_package="/inter;inter";
+
+import "buf/validate/validate.proto";
+
+service InteractiveService {
+    rpc IncrReadCnt(IncrReadCntRequest) returns (IncrReadCntResponse);
+    rpc Get(GetRequest) returns(GetResponse);
+}
+
+message GetRequest {
+  string biz = 1 [(buf.validate.field).cel = {
+    id:"getReq.biz",
+    message:"biz 必须填写",
+    expression:"this != ''"
+  }];
+  int64  id = 2;
+  int64 uid = 3;
+}
+
+message Interactive {
+
+}
+
+message GetResponse {
+  Interactive inter = 1;
+}
+
+message IncrReadCntRequest {
+  string biz = 1;
+  // protobuf 比较推荐使用下划线
+  int64  biz_id = 2;
+}
+
+message IncrReadCntResponse {
+  // 有些公司的规范会要求返回 Code、Msg、Data 三个字段
+  // 但是rpc是公司内部通信可以不要这些东西
+  // http 那边要是因为它面向用户，msg 用于友好的提示，code 用于前端定位问题
+}

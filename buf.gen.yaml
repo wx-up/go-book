@@ -1,0 +1,24 @@
+version: v2
+
+
+managed:
+  enabled: true
+  disable:
+    - module: buf.build/bufbuild/protovalidate
+  override:
+    - file_option: go_package_prefix
+      value: "github.com/wx-up/go-book/api/proto/gen"
+
+plugins:
+  # go语言插件
+  # 默认使用最新版本
+  - remote: buf.build/protocolbuffers/go
+    out: api/proto/gen
+    opt:
+      - paths=source_relative
+
+  # grpc插件
+  - remote: buf.build/grpc/go
+    out: api/proto/gen
+    opt:
+      - paths=source_relative

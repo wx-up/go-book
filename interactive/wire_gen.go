@@ -4,11 +4,13 @@
 //go:build !wireinject
 // +build !wireinject
 
-package startup
+package main
 
 import (
 	"github.com/google/wire"
+	"github.com/wx-up/go-book/interactive/events/articles"
 	"github.com/wx-up/go-book/interactive/grpc"
+	"github.com/wx-up/go-book/interactive/ioc"
 	"github.com/wx-up/go-book/interactive/repository"
 	"github.com/wx-up/go-book/interactive/repository/cache"
 	"github.com/wx-up/go-book/interactive/repository/dao"
@@ -17,20 +19,10 @@ import (
 
 // Injectors from wire.go:
 
-func InitInteractiveService() service.InteractiveService {
-	db := InitTestMysql()
-	interactiveDAO := dao.NewGORMInteractiveDAO(db)
-	cmdable := InitTestRedis()
-	interactiveCache := cache.NewInteractiveRedisCache(cmdable)
-	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
-	interactiveService := service.NewInteractiveService(interactiveRepository)
-	return interactiveService
-}
-
 func InitInteractiveGRPCServer() *grpc.InteractiveServiceServer {
-	db := InitTestMysql()
+	db := ioc.CreateMysql()
 	interactiveDAO := dao.NewGORMInteractiveDAO(db)
-	cmdable := InitTestRedis()
+	cmdable := ioc.CreateRedis()
 	interactiveCache := cache.NewInteractiveRedisCache(cmdable)
 	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
 	interactiveService := service.NewInteractiveService(interactiveRepository)
@@ -38,12 +30,28 @@ func InitInteractiveGRPCServer() *grpc.InteractiveServiceServer {
 	return interactiveServiceServer
 }
 
+func InitApp() *App {
+	logger := ioc.CreateLogger()
+	db := ioc.CreateMysql()
+	interactiveDAO := dao.NewGORMInteractiveDAO(db)
+	cmdable := ioc.CreateRedis()
+	interactiveCache := cache.NewInteractiveRedisCache(cmdable)
+	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
+	client := ioc.InitKafka()
+	readEventKafkaConsumer := articles.NewReadEventKafkaConsumer(logger, interactiveRepository, client)
+	v := ioc.CreateConsumers(readEventKafkaConsumer)
+	interactiveService := service.NewInteractiveService(interactiveRepository)
+	interactiveServiceServer := grpc.NewInteractiveServiceServer(interactiveService)
+	server := ioc.CreateGRPCServer(interactiveServiceServer)
+	app := &App{
+		consumers: v,
+		server:    server,
+	}
+	return app
+}
+
 // wire.go:
 
-var ThirdPartySet = wire.NewSet(
-	InitTestRedis,
-	InitTestMysql,
-	CreateLogger,
-)
+var ThirdPartySet = wire.NewSet(ioc.CreateRedis, ioc.CreateMysql, ioc.CreateLogger, ioc.InitKafka)
 
-var interactiveSvcSet = wire.NewSet(dao.NewGORMInteractiveDAO, cache.NewInteractiveRedisCache, repository.NewCachedInteractiveRepository, service.NewInteractiveService)
+var InteractiveSvcSet = wire.NewSet(dao.NewGORMInteractiveDAO, cache.NewInteractiveRedisCache, repository.NewCachedInteractiveRepository, service.NewInteractiveService)

@@ -3,8 +3,6 @@ package ioc
 import (
 	"github.com/IBM/sarama"
 	"github.com/spf13/viper"
-	article "github.com/wx-up/go-book/interactive/events/articles"
-	"github.com/wx-up/go-book/pkg/saramax"
 )
 
 func InitKafka() sarama.Client {
@@ -23,16 +21,4 @@ func InitKafka() sarama.Client {
 		panic(err)
 	}
 	return client
-}
-
-func NewSyncProducer(client sarama.Client) sarama.SyncProducer {
-	res, err := sarama.NewSyncProducerFromClient(client)
-	if err != nil {
-		panic(err)
-	}
-	return res
-}
-
-func CreateConsumers(ac *article.ReadEventKafkaConsumer) []saramax.Consumer {
-	return []saramax.Consumer{ac}
 }

@@ -3,11 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/wx-up/go-book/pkg/otelx"
@@ -36,67 +32,69 @@ import (
 func main() {
 	// InitConfigByRemote()
 	initConfig()
-	initLogger()
-	initPrometheus()
-	initOTLP()
+	//initLogger()
+	//initPrometheus()
+	//initOTLP()
+	//
+	//app := InitWebService()
+	//app.engine.ContextWithFallback = true
+	//
+	//// 启动消费者
+	//// 这里不够优雅，如果第一个消费者启动成功，后面的消费者失败，理论上应该让第一个消费则退出，go-zero有类似的实现
+	//// 这里粗暴一点，直接panic退出
+	//for _, c := range app.cs {
+	//	if err := c.Start(); err != nil {
+	//		panic(err)
+	//	}
+	//}
+	//
+	//// 启动服务
+	//addr := ":8080"
+	//server := &http.Server{
+	//	Addr:    addr,
+	//	Handler: app.engine,
+	//}
+	//
+	//startErrChain := make(chan error, 2)
+	//go func() {
+	//	startErrChain <- server.ListenAndServe()
+	//}()
+	//
+	//go func() {
+	//	// 2秒后没有报错，则输出服务启动成功
+	//	ticker := time.NewTicker(time.Second * 2)
+	//	select {
+	//	case err := <-startErrChain:
+	//		ticker.Stop()
+	//		log.Fatalf("Server Start Fail: %s\n", err)
+	//	case <-ticker.C:
+	//		ticker.Stop()
+	//		log.Printf("Server Start Success，Listen On %s\n", addr)
+	//		if err := <-startErrChain; err != nil && err != http.ErrServerClosed {
+	//			log.Fatalf("Server Start Fail: %s\n", err)
+	//		}
+	//	}
+	//}()
+	//
+	//quit := make(chan os.Signal, 1) // 创建一个接收信号的通道
+	//// kill 默认会发送 syscall.SIGTERM 信号
+	//// kill -2 发送 syscall.SIGINT 信号，我们常用的Ctrl+C就是触发系统SIGINT信号
+	//// kill -9 发送 syscall.SIGKILL 信号，但是不能被捕获，所以不需要添加它
+	//// signal.Notify把收到的 syscall.SIGINT或syscall.SIGTERM 信号转发给quit
+	//signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM) // 此处不会阻塞
+	//<-quit
+	//
+	//log.Println("Trying Server Shutdown")
+	//
+	//ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	//defer cancel()
+	//if err := server.Shutdown(ctx); err != nil {
+	//	log.Fatal("Server Shutdown Fail: ", err)
+	//}
+	//
+	//log.Println("Server Shutdown Success")
 
-	app := InitWebService()
-	app.engine.ContextWithFallback = true
-
-	// 启动消费者
-	// 这里不够优雅，如果第一个消费者启动成功，后面的消费者失败，理论上应该让第一个消费则退出，go-zero有类似的实现
-	// 这里粗暴一点，直接panic退出
-	for _, c := range app.cs {
-		if err := c.Start(); err != nil {
-			panic(err)
-		}
-	}
-
-	// 启动服务
-	addr := ":8080"
-	server := &http.Server{
-		Addr:    addr,
-		Handler: app.engine,
-	}
-
-	startErrChain := make(chan error, 2)
-	go func() {
-		startErrChain <- server.ListenAndServe()
-	}()
-
-	go func() {
-		// 2秒后没有报错，则输出服务启动成功
-		ticker := time.NewTicker(time.Second * 2)
-		select {
-		case err := <-startErrChain:
-			ticker.Stop()
-			log.Fatalf("Server Start Fail: %s\n", err)
-		case <-ticker.C:
-			ticker.Stop()
-			log.Printf("Server Start Success，Listen On %s\n", addr)
-			if err := <-startErrChain; err != nil && err != http.ErrServerClosed {
-				log.Fatalf("Server Start Fail: %s\n", err)
-			}
-		}
-	}()
-
-	quit := make(chan os.Signal, 1) // 创建一个接收信号的通道
-	// kill 默认会发送 syscall.SIGTERM 信号
-	// kill -2 发送 syscall.SIGINT 信号，我们常用的Ctrl+C就是触发系统SIGINT信号
-	// kill -9 发送 syscall.SIGKILL 信号，但是不能被捕获，所以不需要添加它
-	// signal.Notify把收到的 syscall.SIGINT或syscall.SIGTERM 信号转发给quit
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM) // 此处不会阻塞
-	<-quit
-
-	log.Println("Trying Server Shutdown")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := server.Shutdown(ctx); err != nil {
-		log.Fatal("Server Shutdown Fail: ", err)
-	}
-
-	log.Println("Server Shutdown Success")
+	time.Sleep(time.Hour)
 }
 
 func initLogger() {
@@ -127,6 +125,14 @@ func initConfig() {
 	viper.OnConfigChange(func(e fsnotify.Event) {
 		fmt.Println(viper.UnmarshalKey("db.mysql", &c))
 		fmt.Println(c)
+	})
+	viper.OnConfigChange(func(in fsnotify.Event) {
+		fmt.Println("666")
+	})
+
+	// 最后一个为准
+	viper.OnConfigChange(func(in fsnotify.Event) {
+		fmt.Println("777")
 	})
 }
 

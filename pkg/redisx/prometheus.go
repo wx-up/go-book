@@ -2,6 +2,7 @@ package redisx
 
 import (
 	"context"
+	"errors"
 	"net"
 	"strconv"
 	"time"
@@ -39,7 +40,7 @@ func (p *PrometheusHook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 			val := ctx.Value("biz")
 			_ = val
 			duration := time.Since(startTime).Milliseconds()
-			keyExist := !(err == redis.Nil)
+			keyExist := !(errors.Is(redis.Nil, err))
 			// cmd.Name() 执行的命令
 			// 集群的情况下可以考虑使用 FullName
 			p.vector.WithLabelValues(cmd.Name(), strconv.FormatBool(keyExist)).Observe(float64(duration))

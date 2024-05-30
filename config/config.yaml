@@ -3,7 +3,7 @@ db:
     dsn: "root:root@tcp(localhost:13316)/go_book?charset=utf8mb4&parseTime=True&multiStatements=true&loc=Local"
 
 redis:
-  addr: "localhost:7379"
+  addr: "localhost:6379"
   password: ""
   db: 0
 
@@ -11,3 +11,11 @@ redis:
 kafka:
   addr:
     - "localhost:9092"
+
+
+grpc:
+  client:
+    inter:
+      addr: "localhost:8090"
+    order:
+      addr: "localhost:8091"
